@@ -452,13 +452,15 @@ def _read_composite(path: Path) -> tuple[dict, dict]:
 
 def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, end: dt.date,
               grid: Grid, max_dates: int = 4, min_clear: float = 0.25, refresh: bool = False,
-              log=print) -> tuple[dict | None, dict]:
+              min_cover: float = 0.9, log=print) -> tuple[dict | None, dict]:
     """Median of up to `max_dates` clear-ish dates in [start, end]. Cached as a GeoTIFF."""
     path = site_dir / f"{label}_{int(grid.res)}m.tif"
     if path.exists() and not refresh:
         comp, meta = _read_composite(path)
-        log(f"  {label}: cached, dates {', '.join(meta['dates'])}")
-        return comp, meta
+        if meta.get("valid_fraction", 0) >= min_cover - 0.05:
+            log(f"  {label}: cached, dates {', '.join(meta['dates'])}")
+            return comp, meta
+        log(f"  {label}: cached composite covers only {meta.get('valid_fraction')}: rebuilding")
     groups = group_by_date(stac_search(bbox_ll, start, end))
     candidates = [g for g in groups if g[2] < 80]
     log(f"  {label}: {start} to {end}: {len(groups)} dates found, {len(candidates)} under 80% tile "
@@ -467,16 +469,22 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
     used, fracs = [], []
     pos = 0
     with ThreadPoolExecutor(max_workers=3) as ex:
-        while len(used) < max_dates and pos < len(candidates) and pos < 3 * max_dates:
-            batch = candidates[pos:pos + max_dates - len(used)]
+        # Least-cloudy dates first, but keep going until the study area is covered: dates from
+        # one satellite pass can all cover the same part of a site that spans two passes.
+        cover = np.zeros((grid.height, grid.width), bool)
+        limit = min(len(candidates), 3 * max_dates)
+        while pos < limit and (len(used) < max_dates or cover.mean() < min_cover):
+            batch = candidates[pos:pos + 3]
             pos += len(batch)
             for (d, its, cc), (arrs, frac) in zip(batch, ex.map(lambda g: read_date(g[1], grid), batch)):
                 log(f"    {d}: tile cloud {cc:4.0f}%, clear over study area {frac:5.1%}")
                 if frac >= min_clear:
                     used.append(d)
                     fracs.append(round(frac, 3))
+                    cover |= np.isfinite(arrs["nir"])
                     for b in BANDS:
                         stacks[b].append(arrs[b])
+        log(f"    {len(used)} dates used; study area covered {cover.mean():.1%}")
     meta = dict(label=label, window=[start.isoformat(), end.isoformat()], dates=sorted(used),
                 clear_fraction=dict(zip(used, fracs)), res_m=grid.res,
                 collections=DEA_COLLECTIONS, n_dates_found=len(groups))
