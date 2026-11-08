@@ -742,7 +742,7 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
         add_map_furniture(ax, g)
     fig.suptitle(f"{title_site}\nSentinel-2 false colour (R = SWIR2 B12, G = NIR B8A, B = red B04), "
                  f"same stretch for all panels (reflectance {lo.min():.2f}-{hi_.max():.2f}); "
-                 "burnt ground shows red-brown, healthy vegetation green; cyan = official boundary",
+                 "burnt ground shows magenta-pink, healthy forest green, buttongrass and sedgeland purple; cyan = official boundary",
                  fontsize=9)
     fig.text(0.5, -0.02, caption, ha="center", va="top", fontsize=7, wrap=True)
     fig.savefig(out_dir / "before_after.png", dpi=130, bbox_inches="tight")
@@ -752,8 +752,8 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
     fig, axes = plt.subplots(1, 2, figsize=(11, 5.0 * grid.height / grid.width + 1.6),
                              constrained_layout=True)
     im = axes[0].imshow(dnbr, extent=grid.extent, cmap="BrBG_r",
-                        norm=TwoSlopeNorm(vcenter=0, vmin=-0.5, vmax=1.0), interpolation="nearest")
-    plot_outline(axes[0], geom, color="black")
+                        norm=TwoSlopeNorm(vcenter=0, vmin=-0.8, vmax=0.8), interpolation="nearest")
+    plot_outline(axes[0], geom, color="#0072B2", lw=0.6)
     cb = fig.colorbar(im, ax=axes[0], shrink=0.8, extend="both")
     cb.set_label("dNBR (unitless; > 0 = burn, < 0 = greener than before)")
     axes[0].set_title(f"dNBR: before ({pre_m['dates'][0][:4]}) minus summer {first - 1}-{str(first)[2:]}"
@@ -763,15 +763,16 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
     axes[1].imshow(np.ma.masked_less(cls, 0), extent=grid.extent, cmap=cmap,
                    norm=BoundaryNorm(np.arange(-0.5, len(SEVERITY)), len(SEVERITY)),
                    interpolation="nearest")
-    plot_outline(axes[1], geom, color="#0072B2", lw=1.0)
+    plot_outline(axes[1], geom, color="#0072B2", lw=0.6)
     axes[1].set_title(f"Burn severity class (Key & Benson dNBR thresholds), summer "
                       f"{first - 1}-{str(first)[2:]}\n{stats['burnt_inside_pct']}% of the official "
                       f"boundary burnt (dNBR >= 0.10); white = no clear data", fontsize=9)
     handles = [Patch(color=c, label=f"{n} ({stats['pct_' + slugify(n)]}%)")
                for (n, _, _), c in zip(SEVERITY, SEVERITY_COLOURS)]
     handles.append(Patch(facecolor="none", edgecolor="#0072B2", label="Official boundary"))
-    axes[1].legend(handles=handles, loc="upper left", fontsize=7, title="% of boundary area",
-                   title_fontsize=7, framealpha=0.85)
+    axes[1].legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, -0.02), ncol=3,
+                   fontsize=7, title="% of the official boundary area", title_fontsize=7,
+                   frameon=False)
     for ax in axes:
         ax.set_xticks([]); ax.set_yticks([])
         add_map_furniture(ax, grid)
