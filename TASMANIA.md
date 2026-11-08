@@ -96,6 +96,9 @@ HTML file from a local copy of the repo: the links inside it are relative.
   green from space.
 - Official boundaries include unburnt patches, and they are drawn at different scales for different
   fires. The "% of boundary burnt" figure reflects both of these.
+- `fmask` misses some thin cloud, haze and smoke. These lower NBR, so they can show up as false
+  "low" severity outside the boundary (for example, the pale patches south of the Riveaux Road
+  fire in summer 2019-20). Forestry clearfelling and planned burns also look like burns from space.
 - Cloud is common in western Tasmania. Check the dates and the % covered in `summary.csv`, and the
   white (no data) areas in the figures.
 
