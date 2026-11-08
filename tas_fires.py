@@ -371,7 +371,9 @@ def stac_search(bbox_ll: list[float], start: dt.date, end: dt.date) -> list[dict
 
 def _href(item: dict, asset: str) -> str:
     h = item["assets"][asset]["href"]
-    return h.replace("s3://dea-public-data/", "https://data.dea.ga.gov.au/")
+    # Straight from the public S3 bucket (Sydney): the data.dea.ga.gov.au CloudFront front end
+    # rate-limits bursts of range requests with HTTP 403.
+    return h.replace("s3://dea-public-data/", "https://dea-public-data.s3.ap-southeast-2.amazonaws.com/")
 
 
 def group_by_date(items: list[dict]) -> list[tuple[str, list[dict], float]]:
@@ -398,9 +400,10 @@ def _warp(url: str, grid: Grid) -> np.ndarray:
                     resampling=Resampling.nearest, src_nodata=src.nodata, nodata=src.nodata) as v:
                 return v.read(1)
         except Exception as exc:
-            if i == 3 or "403" in str(exc) or "404" in str(exc):   # missing file: don't retry
+            missing = "403" in str(exc) or "404" in str(exc)   # S3 answers 403 for a missing file
+            if i == 3 or (missing and i == 2):
                 raise
-            time.sleep(2 ** (i + 1))
+            time.sleep(3 * (i + 1))
     raise RuntimeError("unreachable")
 
 
@@ -463,7 +466,7 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
     stacks = {b: [] for b in BANDS}
     used, fracs = [], []
     pos = 0
-    with ThreadPoolExecutor(max_workers=4) as ex:
+    with ThreadPoolExecutor(max_workers=3) as ex:
         while len(used) < max_dates and pos < len(candidates) and pos < 3 * max_dates:
             batch = candidates[pos:pos + max_dates - len(used)]
             pos += len(batch)
