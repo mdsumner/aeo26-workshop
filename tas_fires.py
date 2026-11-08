@@ -397,8 +397,8 @@ def _warp(url: str, grid: Grid) -> np.ndarray:
                     src, crs=CRS, transform=grid.transform, width=grid.width, height=grid.height,
                     resampling=Resampling.nearest, src_nodata=src.nodata, nodata=src.nodata) as v:
                 return v.read(1)
-        except Exception:
-            if i == 3:
+        except Exception as exc:
+            if i == 3 or "403" in str(exc) or "404" in str(exc):   # missing file: don't retry
                 raise
             time.sleep(2 ** (i + 1))
     raise RuntimeError("unreachable")
@@ -409,11 +409,16 @@ def read_date(items: list[dict], grid: Grid) -> tuple[dict, float]:
     out = {b: np.full((grid.height, grid.width), np.nan, "float32") for b in BANDS}
     filled = np.zeros((grid.height, grid.width), bool)
     for it in items:
-        fm = _warp(_href(it, FMASK), grid)
-        ok = (fm == FMASK_CLEAR) & ~filled
-        if not ok.any():
+        try:
+            fm = _warp(_href(it, FMASK), grid)
+            ok = (fm == FMASK_CLEAR) & ~filled
+            if not ok.any():
+                continue
+            refl = {b: to_reflectance(_warp(_href(it, a), grid)) for b, a in BANDS.items()}
+        except Exception as exc:   # e.g. a file missing from the archive (S3 answers 403)
+            print(f"    skipped tile {it['id']} ({it['properties']['datetime'][:10]}): "
+                  f"{str(exc)[:80]}")
             continue
-        refl = {b: to_reflectance(_warp(_href(it, a), grid)) for b, a in BANDS.items()}
         for r in refl.values():
             ok &= np.isfinite(r)
         for b in BANDS:
