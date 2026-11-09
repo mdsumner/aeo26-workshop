@@ -42,9 +42,16 @@ Composites are cached in `downloads/tasmania/<site>/` (not committed), so later 
 | `great-pine-tier` | Great Pine Tier | Jan 2019 | 51,228 ha | Central Plateau near Miena: subalpine woodland, grassland, heath |
 | `mangana-road` | Mangana Road | Dec 2019 | 14,760 ha | North-east, Fingal Valley: dry eucalypt forest and farmland |
 | `mount-donaldson` | Mount Donaldson | Feb 2025 | 57,949 ha | West coast near Corinna (takayna/Tarkine) |
+| `proctors-road` | Proctors Road | Oct 2017 | 226 ha | Hobart's southern hills, about 3.5 km from Fern Tree |
+| `margate-plain` | Margate Plain | Jan 2025 | 484 ha | Hills west of Margate, south of Hobart |
+| `glenlusk` | Molesworth Road | Dec 2025 | 36 ha | Glenlusk, north-west of Hobart near Molesworth |
 
-These are among the largest bushfires since Sentinel-2 began (2015-16), and they cover the main
-Tasmanian landscapes and three fire seasons.
+The first six are among the largest bushfires since Sentinel-2 began (2015-16), and they cover
+the main Tasmanian landscapes. The last three are small fires on Hobart's urban edge. They are at
+the limit of what 20 m pixels can show (36 ha is about 900 pixels), but they are the fires closest
+to home. `glenlusk` was declared out in December 2025, so it has no full summer since the fire yet.
+Its severity is an *initial assessment* from the images just after the fire, and the tool switches
+to the first summer automatically once summer 2026-27 has passed.
 
 ## Outputs
 
@@ -76,13 +83,17 @@ HTML file from a local copy of the repo: the links inside it are relative.
    - *before:* the 120 days before ignition (365 days if that is too cloudy)
    - *just after:* the 120 days after the fire was declared out
    - *each summer* (1 Dec to 31 Mar) after the fire. Later summers are read at 40 m to save downloads.
-4. **Burn severity:** NBR = (NIR - SWIR2) / (NIR + SWIR2), with B8A and B12. dNBR = NBR before minus
-   NBR in the **first summer after the fire**. That is the same season as the before image, about a
-   year on (an "extended assessment"). The median dNBR of unburnt land nearby (outside every fire
+4. **Burn severity:** NBR = (NIR - SWIR2) / (NIR + SWIR2), with B8A and B12. dNBR = NBR in the
+   **last full summer before the fire** minus NBR in the **first summer after it** (an "extended
+   assessment", about a year on). Both are summers, so the grass and crops that dry out from spring
+   to summer don't show up as burns. That problem added 16% false burn around Great Pine Tier when
+   the spring images just before the fire were used. If Sentinel-2 has no summer before the fire
+   (Lake Mackenzie, January 2016), the images just before the fire are used instead, and the figure
+   says so. The median dNBR of unburnt land nearby (outside every fire
    recorded in Fire History over the period) is subtracted, to remove differences in season,
    sun angle and processing. The classes use the Key & Benson (2006) thresholds: unburnt < 0.10,
    low 0.10-0.27, moderate-low 0.27-0.44, moderate-high 0.44-0.66, high >= 0.66.
-5. **Recovery:** for each summer, the median NBR deficit (NBR before minus NBR that summer) per
+5. **Recovery:** for each summer, the median NBR deficit (NBR in the summer before the fire minus NBR that summer) per
    severity class, minus the same for unburnt land. Zero means back to the pre-fire burn ratio.
 
 ## Caveats
