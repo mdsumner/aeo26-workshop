@@ -52,7 +52,8 @@ DEA_COLLECTIONS <- c("ga_s2am_ard_3", "ga_s2bm_ard_3", "ga_s2cm_ard_3")
 
 CRS <- "EPSG:3577"   # GDA94 / Australian Albers, equal-area, metres
 RES <- 20            # metres
-COARSE <- 2L         # recovery summers are read at RES * COARSE
+COARSE <- 2L         # recovery summers are read at RES * COARSE (40 m) to save memory
+SMALL_FIRE_HA <- 1000  # fires smaller than this (official area) keep RES for every summer
 BUFFER_M <- 3000     # study area = fire extent plus this margin
 NODATA <- -999       # DEA ARD nodata
 SCALE <- 10000       # DEA ARD reflectance scale
@@ -662,10 +663,12 @@ analyse_fire <- function(key, fire_id, region = "", max_dates = 4, refresh = FAL
   geom <- to_albers(geom_ll)
   grid <- grid_for_bounds(geom_bounds(geom))
   if (max(grid$width, grid$height) > 4500) grid <- grid_for_bounds(geom_bounds(geom), res = RES * 2)
-  cgrid <- grid_coarsen(grid, COARSE)
+  small <- rec$area_ha < SMALL_FIRE_HA
+  cgrid <- if (small) grid else grid_coarsen(grid, COARSE)
   bbox_ll <- grid_bounds_lonlat(grid)
   cat(sprintf("  grid %d x %d px at %.0f m (%.1f x %.1f km), EPSG:3577\n", grid$width, grid$height,
               grid$res, grid$width * grid$res / 1000, grid$height * grid$res / 1000))
+  cat(sprintf("  later summers at %.0f m%s\n", cgrid$res, if (small) " (small fire)" else ""))
 
   # --- composites ------------------------------------------------------------------------------
   w <- pre_window(rec$ignition)
@@ -752,7 +755,7 @@ analyse_fire <- function(key, fire_id, region = "", max_dates = 4, refresh = FAL
     immediate_dates = paste(imm$meta$dates, collapse = ";"),
     severity_basis = if (initial) "initial (just after the fire)" else sprintf("summer %d", first),
     severity_summer = first, severity_dates = paste(s1$meta$dates, collapse = ";"),
-    res_m = grid$res)
+    res_m = grid$res, recovery_res_m = cgrid$res)
   for (i in seq_len(nrow(SEVERITY))) {
     n <- sum(cls == i - 1L & valid_in)
     stats[[paste0("ha_", slugify(SEVERITY$name[i]))]] <- round(n * px, 1)

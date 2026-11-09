@@ -68,7 +68,9 @@ COASTLINE_URL = "https://naciscdn.org/naturalearth/10m/physical/ne_10m_land.zip"
 
 CRS = "EPSG:3577"          # GDA94 / Australian Albers, equal-area, metres (as in the workshop data)
 RES = 20.0                 # metres; the NIR-narrow and SWIR bands are 20 m native
-COARSE = 2                 # recovery summers are read at RES * COARSE (40 m) to save downloads
+COARSE = 2                 # recovery summers are read at RES * COARSE (40 m) to save memory
+SMALL_FIRE_HA = 1000       # fires smaller than this (official area) keep RES for every summer:
+                           # at 40 m a small fire has too few pixels per severity class (>= 50)
 BUFFER_M = 3000.0          # study area = fire extent plus this margin
 NODATA = -999              # DEA ARD nodata
 SCALE = 10000.0            # DEA ARD reflectance scale
@@ -676,10 +678,12 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
     grid = grid_for_bounds(geom.bounds)
     if max(grid.width, grid.height) > 4500:   # very large fire: use coarser pixels
         grid = grid_for_bounds(geom.bounds, res=RES * 2)
-    cgrid = grid.coarsen(COARSE)
+    small = rec["area_ha"] < SMALL_FIRE_HA
+    cgrid = grid if small else grid.coarsen(COARSE)
     bbox_ll = grid.bounds_lonlat()
     print(f"  grid {grid.width} x {grid.height} px at {grid.res:.0f} m "
-          f"({grid.width * grid.res / 1000:.1f} x {grid.height * grid.res / 1000:.1f} km), EPSG:3577")
+          f"({grid.width * grid.res / 1000:.1f} x {grid.height * grid.res / 1000:.1f} km), EPSG:3577; "
+          f"later summers at {cgrid.res:.0f} m" + (" (small fire)" if small else ""))
 
     # --- composites -----------------------------------------------------------------------------
     s, e = pre_window(rec["ignition"])
@@ -763,7 +767,7 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
         baseline_dates=";".join(base_m["dates"]), immediate_dates=";".join(imm_m.get("dates", [])),
         severity_basis="initial (just after the fire)" if initial else f"summer {first}",
         severity_summer=first, severity_dates=";".join(s1_m["dates"]),
-        res_m=grid.res,
+        res_m=grid.res, recovery_res_m=cgrid.res,
     )
     for i, (name, _, _) in enumerate(SEVERITY):
         n = int(((cls == i) & valid_in).sum())
