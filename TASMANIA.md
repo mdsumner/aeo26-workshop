@@ -50,6 +50,10 @@ Composites are cached in `downloads/tasmania/<site>/` (not committed), so later 
 | `labillardiere-peninsula` | Labillardiere Peninsula | Oct 2025 | 825 ha | South Bruny National Park, Bruny Island |
 | `pelham-road` | Pelham Road | Dec 2019 | 2,115 ha | About 40 km north of Hobart near Pelham (lightning) |
 | `thunder-and-lightning-bay` | Thunder And Lightning Bay | Dec 2016 | 31,770 ha | Flinders Island, Bass Strait |
+| `dolphin-sands-2025` | Dolphin Sands Road | Dec 2025 | 691 ha | Dolphin Sands near Swansea, east coast (initial assessment) |
+| `dolphin-sands-2023` | Dolphin Sands Road | Nov 2023 | 250 ha | The same spit, 5 km further east (no overlap with 2025) |
+| `mcneills-road-2026` | Mcneills Road | Apr 2026 | 1,064 ha | Next to Dolphin Sands, autumn 2026 (initial; winter after-images) |
+| `tasman-highway-2025` | Tasman Highway | Dec 2025 | 1,170 ha | North-east: the largest fire of December 2025 (initial assessment) |
 
 The last four were picked with `--candidates` (see below). The first six are among the largest bushfires since Sentinel-2 began (2015-16), and they cover
 the main Tasmanian landscapes. The last three are small fires on Hobart's urban edge. They are at

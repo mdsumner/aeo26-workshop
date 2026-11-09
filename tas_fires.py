@@ -139,6 +139,19 @@ SITES = {
     "thunder-and-lightning-bay": dict(
         fire_id=8465,
         region="Flinders Island, Bass Strait"),
+    # East coast and north-east, summer 2025-26 (and the earlier Dolphin Sands fire)
+    "dolphin-sands-2025": dict(
+        fire_id=14730,
+        region="Dolphin Sands, near Swansea on the east coast: coastal settlement and bushland"),
+    "dolphin-sands-2023": dict(
+        fire_id=13258,
+        region="Dolphin Sands, near Swansea: the same stretch, burnt two years earlier"),
+    "mcneills-road-2026": dict(
+        fire_id=14889,
+        region="Near Swansea on the east coast, next to Dolphin Sands: autumn 2026"),
+    "tasman-highway-2025": dict(
+        fire_id=14734,
+        region="North-east Tasmania: the largest fire of December 2025"),
 }
 
 ATTRIBUTION = ("Sentinel-2: Digital Earth Australia ARD (Geoscience Australia, CC BY 4.0; contains "
@@ -1000,8 +1013,9 @@ def overview() -> None:
     gs = fig.add_gridspec(1, 3, width_ratios=[1.0, 1.15, 1.15])
     ax = fig.add_subplot(gs[0])
     small: list[dict] = []
+    small_key = ""
     label_offset = {"riveaux-road": (-70, -22), "gell-river": (-62, -6),
-                    "lake-mackenzie": (-100, -34)}
+                    "lake-mackenzie": (-100, -34), "mangana-road": (-40, 28)}
     for g in _coastline():
         for ring in _rings(to_albers(g)):
             x, y = ring.xy
@@ -1013,7 +1027,7 @@ def overview() -> None:
             x, y = ring.xy
             ax.fill(x, y, color=colours[r["site"]], alpha=0.85, lw=0)
         c = g.representative_point()
-        if float(r["official_area_ha"]) < 1000:      # too small to see at state scale
+        if float(r["official_area_ha"]) < 10000:     # number the smaller fires, name the large ones
             ax.plot(c.x, c.y, "o", ms=6, mfc=colours[r["site"]], mec="black", mew=0.6)
             small.append(r)
             continue
@@ -1023,15 +1037,16 @@ def overview() -> None:
                                 if r["site"] in label_offset else None),
                     bbox=dict(boxstyle="round,pad=0.2", fc="white", ec=colours[r["site"]], alpha=0.85))
     if small:
-        cx = np.mean([to_albers(shape(json.loads((OUTPUTS / r["site"] / "boundary.geojson")
-                     .read_text())["features"][0]["geometry"])).centroid.x for r in small])
-        cy = np.mean([to_albers(shape(json.loads((OUTPUTS / r["site"] / "boundary.geojson")
-                     .read_text())["features"][0]["geometry"])).centroid.y for r in small])
-        txt = "Near Hobart (dots):\n" + "\n".join(f"{r['fire_name']} {r['ignition'][:4]}"
-                                                   for r in small)
-        ax.annotate(txt, (cx, cy), fontsize=7, xytext=(28, -46), textcoords="offset points",
-                    arrowprops=dict(arrowstyle="-", color="#636363", lw=0.7),
-                    bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="#636363", alpha=0.9))
+        # number the small fires (any region) and list them in a key in the sea, bottom right
+        key = []
+        for i, r in enumerate(small, 1):
+            g = to_albers(shape(json.loads((OUTPUTS / r["site"] / "boundary.geojson").read_text())
+                                ["features"][0]["geometry"]))
+            c = g.representative_point()
+            ax.annotate(str(i), (c.x, c.y), xytext=(4, 2), textcoords="offset points",
+                        fontsize=6.5, fontweight="bold")
+            key.append(f"{i}  {r['fire_name']} {r['ignition'][:4]}")
+        small_key = "Fires under 10,000 ha (numbered dots):\n" + "\n".join(key)
     ax.set_aspect("equal")
     ax.set_xticks([]); ax.set_yticks([])
     ax.set_title("Fire boundaries studied (Fire History, theLIST)\nEPSG:3577", fontsize=9)
@@ -1063,7 +1078,8 @@ def overview() -> None:
         if pts:
             xs, ys = zip(*pts)
             ax.plot(xs, ys, "-", marker="o", ms=3, color=colours[r["site"]])
-            ends.append([xs[-1], ys[-1], r["fire_name"], colours[r["site"]]])
+            if len(xs) >= 3:     # label only lines with a few summers; newer fires bunch at the start
+                ends.append([xs[-1], ys[-1], r["fire_name"], colours[r["site"]]])
     # direct labels at line ends, nudged apart vertically where they would overlap
     ends.sort(key=lambda e: (e[0], e[1]))
     for i in range(1, len(ends)):
@@ -1076,8 +1092,8 @@ def overview() -> None:
     ax.axhline(0, color="black", lw=0.8)
     ax.set_xlabel("Summers since the fire (years)")
     ax.set_ylabel("NBR deficit vs before the fire (unitless)")
-    ax.set_title("Recovery of high-severity areas, relative to unburnt land\n"
-                 "0 = back to the pre-fire burn ratio; colour = fire year", fontsize=9)
+    ax.set_title("High-severity recovery vs unburnt land\n"
+                 "0 = pre-fire burn ratio; colour = fire year", fontsize=9)
     ax.grid(alpha=0.3)
     sm = plt.cm.ScalarMappable(norm=Normalize(0, 1), cmap=year_cmap)
     cb = fig.colorbar(sm, ax=ax, shrink=0.6, pad=0.01)
@@ -1093,6 +1109,8 @@ def overview() -> None:
              "after; dNBR corrected with unburnt land nearby. " + ATTRIBUTION +
              " Coastline: Natural Earth (public domain).", ha="center", va="top", fontsize=7,
              wrap=True)
+    if small_key:   # outside the constrained layout, in the empty space under the map
+        fig.text(0.012, 0.235, small_key, ha="left", va="top", fontsize=6.5, in_layout=False)
     fig.savefig(OUTPUTS / "overview.png", dpi=130, bbox_inches="tight")
     plt.close(fig)
     _folium_map(summaries, colours)
