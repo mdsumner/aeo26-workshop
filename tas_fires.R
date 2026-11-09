@@ -463,6 +463,8 @@ rasterize_mask <- function(geoms, g) {
 # ---------------------------------------------------------------------------------------------
 
 SEVERITY_COLOURS <- c("#d9d9d9", "#fed976", "#fd8d3c", "#e31a1c", "#800026")   # grey + YlOrRd
+DISCLAIMER <- paste("Not an official resource: exploratory results made with an AI coding",
+                    "agent at a workshop, not checked by a bushfire or fire-ecology expert.")
 ATTRIBUTION <- paste("Sentinel-2: Digital Earth Australia ARD (Geoscience Australia, CC BY 4.0;",
                      "contains Copernicus data). Fire boundaries: Fire History, theLIST (c) State of",
                      "Tasmania, CC BY 3.0 AU.")
@@ -538,7 +540,7 @@ open_png <- function(path, width, height) {
 draw_figures <- function(out_dir, rec, region, end, geom, grid, panels, initial, first, last,
                          dnbr, cls, offset, base_name, sev_name, s1_meta, stats, rows,
                          pre_ndvi, pre_ndvi_ctrl, pre) {
-  caption <- sprintf("%s fire (FIRE_ID %d), ignited %s, declared out %s. %s", rec$name,
+  caption <- sprintf("%s %s fire (FIRE_ID %d), ignited %s, declared out %s. %s", DISCLAIMER, rec$name,
                      as.integer(stats$fire_id), format(rec$ignition, "%d %b %Y"),
                      format(end, "%d %b %Y"), ATTRIBUTION)
   title_site <- sprintf("%s fire, %s%s", rec$name, format(rec$ignition, "%Y"),
