@@ -438,13 +438,17 @@ def _warp(url: str, grid: Grid) -> np.ndarray:
     raise RuntimeError("unreachable")
 
 
-def read_date(items: list[dict], grid: Grid) -> tuple[dict, float]:
-    """Mosaic one date's tiles: clear (fmask) reflectance per band, and the clear fraction."""
+def read_date(items: list[dict], grid: Grid) -> tuple[dict, float, np.ndarray]:
+    """Mosaic one date's tiles: clear (fmask) reflectance per band, the clear fraction of the land
+    seen, and the land seen (fmask clear, cloud, shadow or snow: anything but water and nodata,
+    so a coastal study area is not penalised for its sea)."""
     out = {b: np.full((grid.height, grid.width), np.nan, "float32") for b in BANDS}
     filled = np.zeros((grid.height, grid.width), bool)
+    land = np.zeros((grid.height, grid.width), bool)
     for it in items:
         try:
             fm = _warp(_href(it, FMASK), grid)
+            land |= (fm >= 1) & (fm <= 4)
             ok = (fm == FMASK_CLEAR) & ~filled
             if not ok.any():
                 continue
@@ -458,7 +462,7 @@ def read_date(items: list[dict], grid: Grid) -> tuple[dict, float]:
         for b in BANDS:
             out[b][ok] = refl[b][ok]
         filled |= ok
-    return out, float(filled.mean())
+    return out, float(filled.sum() / max(land.sum(), 1)), land
 
 
 def _write_composite(path: Path, comp: dict, grid: Grid, meta: dict) -> None:
@@ -504,19 +508,24 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
         # Least-cloudy dates first, but keep going until the study area is covered: dates from
         # one satellite pass can all cover the same part of a site that spans two passes.
         cover = np.zeros((grid.height, grid.width), bool)
+        land_any = np.zeros((grid.height, grid.width), bool)
+        covered = lambda: float((cover & land_any).sum() / max(land_any.sum(), 1))
         limit = min(len(candidates), 3 * max_dates)
-        while pos < limit and (len(used) < max_dates or cover.mean() < min_cover):
+        while pos < limit and (len(used) < max_dates or covered() < min_cover):
             batch = candidates[pos:pos + 3]
             pos += len(batch)
-            for (d, its, cc), (arrs, frac) in zip(batch, ex.map(lambda g: read_date(g[1], grid), batch)):
-                log(f"    {d}: tile cloud {cc:4.0f}%, clear over study area {frac:5.1%}")
+            for (d, its, cc), (arrs, frac, land) in zip(batch, ex.map(lambda g: read_date(g[1], grid),
+                                                                     batch)):
+                land_any |= land
+                log(f"    {d}: tile cloud {cc:4.0f}%, clear over the land {frac:5.1%}")
                 if frac >= min_clear:
                     used.append(d)
                     fracs.append(round(frac, 3))
                     cover |= np.isfinite(arrs["nir"])
                     for b in BANDS:
                         stacks[b].append(arrs[b])
-        log(f"    {len(used)} dates used; study area covered {cover.mean():.1%}")
+        log(f"    {len(used)} dates used; land covered {covered():.1%} "
+            f"(land is {land_any.mean():.0%} of the study area)")
     meta = dict(label=label, window=[start.isoformat(), end.isoformat()], dates=sorted(used),
                 clear_fraction=dict(zip(used, fracs)), res_m=grid.res,
                 collections=DEA_COLLECTIONS, n_dates_found=len(groups), searched_all=True)
@@ -527,7 +536,8 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
         warnings.simplefilter("ignore", RuntimeWarning)
         comp = {b: np.nanmedian(np.stack(stacks[b]), axis=0).astype("float32") for b in BANDS}
     comp["n_clear"] = np.isfinite(np.stack(stacks["nir"])).sum(axis=0).astype("float32")
-    meta["valid_fraction"] = round(float(np.isfinite(comp["nir"]).mean()), 3)
+    meta["valid_fraction"] = round(float(np.isfinite(comp["nir"])[land_any].mean()), 3)
+    meta["land_fraction"] = round(float(land_any.mean()), 3)
     _write_composite(path, comp, grid, meta)
     return comp, meta
 
@@ -659,6 +669,8 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
         base_name = f"just before the fire ({pre_m['dates'][0][:4]}; no earlier summer available)"
     else:
         base_name = f"summer {py - 1}-{str(py)[2:]}"
+    if pre is None:
+        raise SystemExit("No clear images in the year before the fire")
     s, e = immediate_window(end)
     imm, imm_m = composite(site_dir, "immediate", bbox_ll, s, e, grid, max_dates, refresh=refresh)
     first = first_summer_after(end)
