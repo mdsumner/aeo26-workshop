@@ -438,17 +438,20 @@ def _warp(url: str, grid: Grid) -> np.ndarray:
     raise RuntimeError("unreachable")
 
 
-def read_date(items: list[dict], grid: Grid) -> tuple[dict, float, np.ndarray]:
-    """Mosaic one date's tiles: clear (fmask) reflectance per band, the clear fraction of the land
-    seen, and the land seen (fmask clear, cloud, shadow or snow: anything but water and nodata,
-    so a coastal study area is not penalised for its sea)."""
+def read_date(items: list[dict], grid: Grid) -> tuple[dict, float, np.ndarray, np.ndarray]:
+    """Mosaic one date's tiles. Returns clear (fmask) reflectance per band, the clear fraction of
+    what fmask saw as not water, and two masks: seen-not-water (clear, cloud, shadow, snow) and
+    water. Across dates, a pixel ever labelled water is treated as sea, so a coastal study area is
+    not penalised for its sea."""
     out = {b: np.full((grid.height, grid.width), np.nan, "float32") for b in BANDS}
     filled = np.zeros((grid.height, grid.width), bool)
     land = np.zeros((grid.height, grid.width), bool)
+    water = np.zeros((grid.height, grid.width), bool)
     for it in items:
         try:
             fm = _warp(_href(it, FMASK), grid)
             land |= (fm >= 1) & (fm <= 4)
+            water |= fm == 5
             ok = (fm == FMASK_CLEAR) & ~filled
             if not ok.any():
                 continue
@@ -462,7 +465,7 @@ def read_date(items: list[dict], grid: Grid) -> tuple[dict, float, np.ndarray]:
         for b in BANDS:
             out[b][ok] = refl[b][ok]
         filled |= ok
-    return out, float(filled.sum() / max(land.sum(), 1)), land
+    return out, float(filled.sum() / max(land.sum(), 1)), land, water
 
 
 def _write_composite(path: Path, comp: dict, grid: Grid, meta: dict) -> None:
@@ -496,7 +499,7 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
         # (composites built before coverage was measured over land lack "land_fraction": a
         # patchy one of those is rebuilt once, as the sea may be what made it look patchy)
         if meta.get("valid_fraction", 0) >= min_cover - 0.05 or (
-                meta.get("searched_all") and "land_fraction" in meta):
+                meta.get("searched_all") and meta.get("coverage_basis") == "land-v2"):
             log(f"  {label}: cached, dates {', '.join(meta['dates'])}")
             return comp, meta
         log(f"  {label}: cached composite covers only {meta.get('valid_fraction')}: rebuilding")
@@ -511,15 +514,18 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
         # Least-cloudy dates first, but keep going until the study area is covered: dates from
         # one satellite pass can all cover the same part of a site that spans two passes.
         cover = np.zeros((grid.height, grid.width), bool)
-        land_any = np.zeros((grid.height, grid.width), bool)
-        covered = lambda: float((cover & land_any).sum() / max(land_any.sum(), 1))
+        seen = np.zeros((grid.height, grid.width), bool)
+        water_any = np.zeros((grid.height, grid.width), bool)
+        land_eff = lambda: (seen & ~water_any) | cover
+        covered = lambda: float(cover.sum() / max(land_eff().sum(), 1))
         limit = min(len(candidates), 3 * max_dates)
         while pos < limit and (len(used) < max_dates or covered() < min_cover):
             batch = candidates[pos:pos + 3]
             pos += len(batch)
-            for (d, its, cc), (arrs, frac, land) in zip(batch, ex.map(lambda g: read_date(g[1], grid),
-                                                                     batch)):
-                land_any |= land
+            for (d, its, cc), (arrs, frac, land, water) in zip(
+                    batch, ex.map(lambda g: read_date(g[1], grid), batch)):
+                seen |= land
+                water_any |= water
                 log(f"    {d}: tile cloud {cc:4.0f}%, clear over the land {frac:5.1%}")
                 if frac >= min_clear:
                     used.append(d)
@@ -528,7 +534,7 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
                     for b in BANDS:
                         stacks[b].append(arrs[b])
         log(f"    {len(used)} dates used; land covered {covered():.1%} "
-            f"(land is {land_any.mean():.0%} of the study area)")
+            f"(land is {land_eff().mean():.0%} of the study area)")
     meta = dict(label=label, window=[start.isoformat(), end.isoformat()], dates=sorted(used),
                 clear_fraction=dict(zip(used, fracs)), res_m=grid.res,
                 collections=DEA_COLLECTIONS, n_dates_found=len(groups), searched_all=True)
@@ -539,8 +545,10 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
         warnings.simplefilter("ignore", RuntimeWarning)
         comp = {b: np.nanmedian(np.stack(stacks[b]), axis=0).astype("float32") for b in BANDS}
     comp["n_clear"] = np.isfinite(np.stack(stacks["nir"])).sum(axis=0).astype("float32")
-    meta["valid_fraction"] = round(float(np.isfinite(comp["nir"])[land_any].mean()), 3)
-    meta["land_fraction"] = round(float(land_any.mean()), 3)
+    land_mask = land_eff()
+    meta["valid_fraction"] = round(float(np.isfinite(comp["nir"])[land_mask].mean()), 3)
+    meta["land_fraction"] = round(float(land_mask.mean()), 3)
+    meta["coverage_basis"] = "land-v2"
     _write_composite(path, comp, grid, meta)
     return comp, meta
 
@@ -668,8 +676,10 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
         base, base_m = composite(site_dir, f"presummer{py}", bbox_ll, s, e, grid, max_dates,
                                  refresh=refresh)
     if base is None or base_m.get("valid_fraction", 0) < 0.8:
+        why = ("no earlier Sentinel-2 summer" if base is None and not base_m else
+               f"summer {py - 1}-{str(py)[2:]} too cloudy")
         base, base_m = pre, pre_m
-        base_name = f"just before the fire ({pre_m['dates'][0][:4]}; no earlier summer available)"
+        base_name = f"just before the fire ({pre_m['dates'][0][:4]}; {why})"
     else:
         base_name = f"summer {py - 1}-{str(py)[2:]}"
     if pre is None:
@@ -1152,9 +1162,11 @@ def _landing_page(summaries: list[dict]) -> None:
         if initial:
             notes.append("Initial assessment from images just after the fire: no full summer has "
                          "passed yet, so seasonal drying adds some false low severity.")
-        if "no earlier summer" in str(r.get("baseline", "")):
-            notes.append("No Sentinel-2 summer before this fire: the baseline is the spring "
-                         "images just before it.")
+        base_txt = str(r.get("baseline", ""))
+        if base_txt.startswith("just before the fire"):
+            why = base_txt.split("; ", 1)[-1].rstrip(")") if "; " in base_txt else ""
+            notes.append(f"Baseline is the images just before the fire ({why}), not the summer "
+                         "before, so seasonal change may add some false low severity.")
         if float(r["official_area_ha"]) < 1000:
             notes.append("Small fire: near the limit of 20 m pixels.")
         false_pct = 100 * float(r["burnt_outside_ha"]) / max(float(r["control_ha"]), 1)
