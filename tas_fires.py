@@ -139,6 +139,19 @@ SITES = {
     "thunder-and-lightning-bay": dict(
         fire_id=8465,
         region="Flinders Island, Bass Strait"),
+    # East coast and north-east, summer 2025-26 (and the earlier Dolphin Sands fire)
+    "dolphin-sands-2025": dict(
+        fire_id=14730,
+        region="Dolphin Sands, near Swansea on the east coast: coastal settlement and bushland"),
+    "dolphin-sands-2023": dict(
+        fire_id=13258,
+        region="Dolphin Sands, near Swansea: the same stretch, burnt two years earlier"),
+    "mcneills-road-2026": dict(
+        fire_id=14889,
+        region="Near Swansea on the east coast, next to Dolphin Sands: autumn 2026"),
+    "tasman-highway-2025": dict(
+        fire_id=14734,
+        region="North-east Tasmania: the largest fire of December 2025"),
 }
 
 ATTRIBUTION = ("Sentinel-2: Digital Earth Australia ARD (Geoscience Australia, CC BY 4.0; contains "
