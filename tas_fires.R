@@ -595,7 +595,7 @@ draw_figures <- function(out_dir, rec, region, end, geom, grid, panels, initial,
   col_of <- function(i) if (i == 1) "#737373" else SEVERITY_COLOURS[i]
   get <- function(field) vapply(rows, function(r) { v <- r[[field]]; if (is.null(v) || is.na(v)) NA_real_ else v }, 0)
   open_png(file.path(out_dir, "recovery.png"), 11, 4.6)
-  par(mfrow = c(1, 2), mar = c(5.5, 5, 2.5, 1), oma = c(2, 0, 2, 0), las = 1, cex.axis = 0.75, cex.lab = 0.8)
+  par(mfrow = c(1, 2), mar = c(5.5, 5, 2.5, 1), oma = c(2, 0, 3, 0), las = 1, cex.axis = 0.75, cex.lab = 0.8)
   def <- lapply(seq_len(nrow(SEVERITY)), function(i) get(paste0("deficit_", slugify(SEVERITY$name[i]))))
   nd <- lapply(seq_len(nrow(SEVERITY)), function(i) get(paste0("ndvi_", slugify(SEVERITY$name[i]))))
   has <- vapply(def, function(v) any(!is.na(v)), TRUE)
@@ -627,7 +627,8 @@ draw_figures <- function(out_dir, rec, region, end, geom, grid, panels, initial,
   yy <- function(y) sprintf("%d-%s", y - 1, substr(y, 3, 4))
   span <- if (length(years) == 1) paste("summer", yy(years)) else
     sprintf("summers %s to %s", yy(years[1]), yy(max(years)))
-  mtext(sprintf("%s: recovery, %s", title_site, span), outer = TRUE, side = 3, cex = 0.8)
+  mtext(wrap(sprintf("%s: recovery, %s", title_site, span), 120), outer = TRUE, side = 3, cex = 0.8,
+        line = 0.2)
   mtext(wrap(caption, 140), outer = TRUE, side = 1, line = 0.8, cex = 0.55)
   dev.off()
 }
