@@ -291,13 +291,20 @@ warp_to_grid <- function(url, g) {
   }
 }
 
-# Mosaic one date's tiles: clear (fmask) reflectance per band, and the clear fraction
+# Mosaic one date's tiles. Returns clear (fmask) reflectance per band, the clear fraction of what
+# fmask saw as not water, and two masks: seen-not-water (clear, cloud, shadow, snow) and water.
+# Across dates, a pixel ever labelled water is treated as sea, so a coastal study area is not
+# penalised for its sea.
 read_date <- function(items, g) {
   out <- lapply(BANDS, function(b) matrix(NaN, g$height, g$width))
   filled <- matrix(FALSE, g$height, g$width)
+  land <- matrix(FALSE, g$height, g$width)
+  water <- matrix(FALSE, g$height, g$width)
   for (it in items) {
     r <- tryCatch({
       fm <- warp_to_grid(href(it, FMASK), g)
+      land <- land | (fm >= 1 & fm <= 4)
+      water <- water | (fm == 5)
       ok <- (fm == FMASK_CLEAR) & !filled
       if (!any(ok)) NULL else
         list(ok = ok, refl = lapply(BANDS, function(a) to_reflectance(warp_to_grid(href(it, a), g))))
@@ -312,7 +319,7 @@ read_date <- function(items, g) {
     for (b in names(BANDS)) out[[b]][ok] <- r$refl[[b]][ok]
     filled <- filled | ok
   }
-  list(arrs = out, frac = mean(filled))
+  list(arrs = out, frac = sum(filled) / max(sum(land), 1), land = land, water = water)
 }
 
 write_composite <- function(path, comp, g, meta) {
@@ -355,7 +362,11 @@ composite <- function(site_dir, label, bbox_ll, start, end, g, max_dates = 4, mi
   path <- file.path(site_dir, sprintf("%s_%dm.tif", label, as.integer(g$res)))
   if (file.exists(path) && !refresh) {
     rc <- read_composite(path)
-    if ((rc$meta$valid_fraction %||% 0) >= min_cover - 0.05 || isTRUE(rc$meta$searched_all)) {
+    # accept if well covered, or if the last build already tried every candidate date (composites
+    # built before coverage was measured over land lack "land-v2": a patchy one of those is rebuilt
+    # once, as the sea may be what made it look patchy)
+    if ((rc$meta$valid_fraction %||% 0) >= min_cover - 0.05 ||
+        (isTRUE(rc$meta$searched_all) && identical(rc$meta$coverage_basis, "land-v2"))) {
       cat(sprintf("  %s: cached, dates %s\n", label, paste(rc$meta$dates, collapse = ", ")))
       return(rc)
     }
@@ -370,15 +381,21 @@ composite <- function(site_dir, label, bbox_ll, start, end, g, max_dates = 4, mi
   fracs <- numeric()
   pos <- 0
   cover <- matrix(FALSE, g$height, g$width)
+  seen <- matrix(FALSE, g$height, g$width)
+  water_any <- matrix(FALSE, g$height, g$width)
+  land_eff <- function() (seen & !water_any) | cover
+  covered <- function() sum(cover) / max(sum(land_eff()), 1)
   limit <- min(length(candidates), 3 * max_dates)
-  while (pos < limit && (length(used) < max_dates || mean(cover) < min_cover)) {
+  while (pos < limit && (length(used) < max_dates || covered() < min_cover)) {
     batch <- candidates[(pos + 1):min(pos + 3, length(candidates))]
     pos <- pos + length(batch)
     reads <- parallel::mclapply(batch, function(x) read_date(x$items, g), mc.cores = 3)
     for (k in seq_along(batch)) {
       r <- reads[[k]]
       if (inherits(r, "try-error")) stop(r)
-      cat(sprintf("    %s: tile cloud %4.0f%%, clear over study area %5.1f%%\n",
+      seen <- seen | r$land
+      water_any <- water_any | r$water
+      cat(sprintf("    %s: tile cloud %4.0f%%, clear over the land %5.1f%%\n",
                   batch[[k]]$date, batch[[k]]$cloud, 100 * r$frac))
       if (r$frac >= min_clear) {
         used <- c(used, batch[[k]]$date)
@@ -388,7 +405,8 @@ composite <- function(site_dir, label, bbox_ll, start, end, g, max_dates = 4, mi
       }
     }
   }
-  cat(sprintf("    %d dates used; study area covered %.1f%%\n", length(used), 100 * mean(cover)))
+  cat(sprintf("    %d dates used; land covered %.1f%% (land is %.0f%% of the study area)\n",
+              length(used), 100 * covered(), 100 * mean(land_eff())))
   o <- order(used)
   meta <- list(label = label, window = c(format(start), format(end)), dates = used[o],
                clear_fraction = as.list(setNames(fracs, used)), res_m = g$res,
@@ -403,7 +421,10 @@ composite <- function(site_dir, label, bbox_ll, start, end, g, max_dates = 4, mi
     matrix(m, g$height, g$width)
   })
   comp$n_clear <- Reduce(`+`, lapply(stacks$nir, function(x) is.finite(x) * 1))
-  meta$valid_fraction <- round(mean(is.finite(comp$nir)), 3)
+  land_mask <- land_eff()
+  meta$valid_fraction <- round(mean(is.finite(comp$nir)[land_mask]), 3)
+  meta$land_fraction <- round(mean(land_mask), 3)
+  meta$coverage_basis <- "land-v2"
   write_composite(path, comp, g, meta)
   read_composite(path)   # analyse the stored (Float32) values, as Python does
 }
@@ -661,9 +682,10 @@ analyse_fire <- function(key, fire_id, region = "", max_dates = 4, refresh = FAL
                       refresh = refresh)
   }
   if (is.null(base$comp) || (base$meta$valid_fraction %||% 0) < 0.8) {
+    why <- if (is.null(base$comp) && !length(base$meta)) "no earlier Sentinel-2 summer" else
+      sprintf("summer %d-%s too cloudy", py - 1, substr(py, 3, 4))
     base <- pre
-    base_name <- sprintf("just before the fire (%s; no earlier summer available)",
-                         substr(pre$meta$dates[1], 1, 4))
+    base_name <- sprintf("just before the fire (%s; %s)", substr(pre$meta$dates[1], 1, 4), why)
   } else {
     base_name <- sprintf("summer %d-%s", py - 1, substr(py, 3, 4))
   }
