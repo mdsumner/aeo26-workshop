@@ -83,8 +83,9 @@ to the first summer automatically once summer 2026-27 has passed.
 
 ### Near Fern Tree (group `fern-tree`)
 
-Bushfires since 2015-16 within about 20 km of Fern Tree, on kunanyi/Mount Wellington: every fire of
-5 ha or more within 20 km, plus fires of 2 ha or more within 10 km. Proctors Road, Margate Plain and
+Bushfires since 2015-16 within about 25 km of Fern Tree, on kunanyi/Mount Wellington: every fire of
+5 ha or more within 25 km, plus fires of 2 ha or more within 10 km (distance from the centre of the
+fire's boundary). Proctors Road, Margate Plain and
 Glenlusk are in this group too. Most of the 99 bushfires recorded within 15 km are campfires under
 1 ha, which 20 m pixels cannot measure (one pixel is 0.04 ha). Even the fires listed here are small:
 2 ha is about 50 pixels, so their severity and recovery numbers are indicative only, and the landing
@@ -105,14 +106,19 @@ page says so on each card under 10 ha.
 | `mount-hull-road-2024` | Mount Hull Road | Oct 2024 | 2.0 ha | 10 km north |
 | `snowy-view-heights-2024` | Snowy View Heights | Oct 2024 | 53.6 ha | 18 km west |
 | `glen-dhu-road-2026` | Glen Dhu Road | Feb 2026 | 5.6 ha | 18 km north-west |
+| `hydehurst-road-2016` | Hydehurst Road | Dec 2016 | 8.9 ha | 19 km north-west |
+| `glenfern-road-2019` | Glenfern Road, Glenfern | Oct 2019 | 210.8 ha | 25 km north-west |
+| `cloverside-road-2020` | Cloverside Road | Nov 2020 | 9.1 ha | 18 km west |
+| `back-river-road-2023` | Back River Road | Feb 2023 | 10.2 ha | 25 km north-west |
+| `boyer-road-2026` | Boyer Road | Jan 2026 | 8.3 ha | 21 km north |
 
-Rockingham Drive (Nov 2015, 26.7 ha, 17 km), Jeffreys Track (Dec 2019, 20.7 ha, 19 km), Cloverside
-Road (Nov 2020, 9.1 ha, 18 km) and Hydehurst Road (Dec 2016, 8.9 ha, 19 km) also meet these rules
-but have not been added yet.
+The last five were added in November 2026, when the radius went from 20 to 25 km, with four more
+that went to Uncertain results (below). Hydehurst Road, Cloverside Road, Rockingham Drive and
+Jeffreys Track already met the 20 km rule but had been missed.
 
 ### Uncertain results (group `uncertain`)
 
-Three fires near Fern Tree that meet the rules above, but whose results are weak or noisy, so they
+Fires near Fern Tree that meet the rules above, but whose results are weak or noisy, so they
 have their own tab: the share of the boundary that shows a burn is close to, or below, the share of
 unburnt land nearby that shows the same drop, or the burn is only a speckle of low severity. Each
 card gives the two percentages.
@@ -122,6 +128,10 @@ card gives the two percentages.
 | `peter-murrell-2017` | Peter Murrell NR, Blackmans Bay | Nov 2017 | 4.9 ha | Less of the boundary shows a burn than of unburnt land nearby |
 | `wyre-forest-road-2021` | Wyre Forest Road, Molesworth | Mar 2021 | 16.6 ha | Only about 10% of the boundary shows a burn |
 | `channel-highway-2024` | Channel Highway | Feb 2024 | 2.4 ha | About 0.5 ha of low-severity speckle |
+| `rockingham-drive-2015` | Rockingham Drive | Nov 2015 | 26.7 ha | Less of the boundary shows a burn (4.9%) than of unburnt land nearby (13.3%) |
+| `ethan-court-2016` | Ethan Court | Apr 2016 | 7.0 ha | A thin strip inside a wide speckle of low severity (36.7% inside, 18.3% nearby) |
+| `jeffreys-track-2019` | Jeffreys Track | Dec 2019 | 20.7 ha | Little inside the boundary (21.6%) beyond what unburnt land nearby shows (15.5%) |
+| `shark-point-road-2019` | Shark Point Road | Dec 2019 | 14.0 ha | On the estuary edge; less shows a burn inside (11.3%) than nearby (14.4%) |
 
 ## Outputs
 

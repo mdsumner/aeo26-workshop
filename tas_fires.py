@@ -107,7 +107,7 @@ GROUPS = {
     "tasmania": ("Major fires", "Recent Tasmanian bushfires",
                  "large and significant fires across the state", "overview.png"),
     "fern-tree": ("Near Fern Tree", "Bushfires near Fern Tree",
-                  "smaller fires within about 20 km of Fern Tree, on kunanyi/Mount Wellington",
+                  "smaller fires within about 25 km of Fern Tree, on kunanyi/Mount Wellington",
                   "overview_fern_tree.png"),
     "uncertain": ("Uncertain results", "Fires with weak or noisy results",
                   "small fires near Fern Tree whose burn signal is hard to tell apart from "
