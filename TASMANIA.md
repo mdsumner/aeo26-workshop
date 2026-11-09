@@ -28,6 +28,7 @@ Other ways to choose a fire:
 | `python tas_fires.py --lon 146.7 --lat -43.1` | The most recent bushfire that covers this point |
 | `python tas_fires.py --all` | Every built-in site, then the overview |
 | `python tas_fires.py --overview` | Rebuild the overview and interactive map from finished sites |
+| `python tas_fires.py --candidates` | Triage every other bushfire since 2015-16 (100 ha or more) into `outputs/tasmania/candidates.csv`: region, distance from Fern Tree, which baseline and assessment it would get, and pixel count |
 
 The first run of a site downloads about 0.5-2 GB of image pieces and takes about 10-30 minutes.
 Composites are cached in `downloads/tasmania/<site>/` (not committed), so later runs are fast.

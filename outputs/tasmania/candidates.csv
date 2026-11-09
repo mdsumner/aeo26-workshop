@@ -1,0 +1,124 @@
+fire_id,name,area_ha,ignition,declared_out,cause,region,km_from_fern_tree,lon,lat,baseline,assessment,recovery_summers,pixels_20m
+8040,Pipeline Rd & Rulla Rd,61819,2016-01-14,2016-05-04,Natural,North-west,261,145.0805,-41.209,pre-fire (fallback),extended,10,1545476
+10138,Moores Valley,33789,2019-01-15,2019-02-15,Natural,South-west,134,145.6305,-42.8225,summer before,extended,7,844725
+8465,Thunder And Lightning Bay,31770,2016-12-04,2016-12-19,Accidental,Bass Strait islands,291,148.248,-40.4035,summer before,extended,9,794260
+8083,Wuthering Heights,21306,2016-01-21,2016-05-04,Natural,North-west,282,144.783,-41.1485,pre-fire (fallback),extended,10,532654
+14018,Yellowband Plain,20036,2025-02-03,2025-06-24,Natural,West coast,210,145.288,-41.708,summer before,extended,1,500903
+14013,Canning Peak,9253,2025-02-03,2025-04-17,Natural,Midlands / Derwent,165,145.905,-41.818,summer before,extended,1,231319
+14019,Pieman River,8576,2025-02-04,2025-06-24,Undetermined,West coast,228,145.023,-41.6995,summer before,extended,1,214390
+10771,Mount Malcolm,8323,2019-12-30,2020-03-10,Accidental,North-east,151,148.0395,-41.684,summer before,extended,6,208070
+9104,Argonaut Road,7472,2017-10-17,2017-12-21,Accidental,North-east,187,148.119,-41.3645,summer before,extended,8,186806
+10145,Western Hills,6492,2019-01-15,2019-03-02,Natural,West coast,202,145.307,-41.8105,summer before,extended,7,162303
+12796,Pocacker East - FWRNP110SFR,5547,2023-04-14,2023-04-24,Accidental,South-west,147,145.515,-42.5925,summer before,extended,3,138679
+10727,Mcneills Road,4879,2019-11-30,2020-01-22,Natural,East,106,147.968,-42.124,summer before,extended,6,121985
+7816,Lackrana Road,4669,2015-10-06,2016-03-06,Accidental,Bass Strait islands,326,148.2385,-40.077,pre-fire (fallback),extended,10,116732
+8068,Gordon River Road,4212,2016-01-17,2016-05-13,Natural,South-west,86,146.2185,-42.8345,pre-fire (fallback),extended,10,105291
+7806,Victoria Valley Road,3708,2015-10-03,2015-11-30,Undetermined,Midlands / Derwent,76,146.7175,-42.37,pre-fire (fallback),extended,11,92698
+10142,Celtic Hill,3519,2019-01-15,2019-02-22,Natural,South-west,74,146.36,-42.961,summer before,extended,7,87976
+10134,Dolphin Ridge,2913,2019-01-15,2019-02-07,Natural,South-west,123,145.759,-42.934,summer before,extended,7,72829
+10150,Lynch Hill,2869,2019-01-15,2019-03-02,Natural,West coast,200,145.436,-41.725,summer before,extended,7,71732
+8478,Phipps Road,2868,2016-12-13,2016-12-31,Undetermined,East,39,147.621,-42.695,summer before,extended,9,71694
+10770,Foochow Flinders Island,2736,2019-12-30,2020-03-10,Deliberate,Bass Strait islands,345,148.0725,-39.8735,summer before,extended,6,68411
+10747,"Pearce Basin, Southwest",2729,2019-12-22,2020-03-10,Natural,South-west,98,146.0955,-42.7,summer before,extended,6,68224
+13199,Coles Bay Road,2579,2023-09-19,2023-10-25,Undetermined,East,133,148.2555,-41.9715,summer before,extended,3,64475
+8039,Griffiths Creek,2475,2016-01-14,2016-04-08,Natural,South-west,167,145.296,-42.5175,pre-fire (fallback),extended,10,61868
+10179,Brittons Swamp,2458,2019-01-29,2019-03-20,Accidental,North-west,285,145.015,-40.9545,summer before,extended,7,61460
+8277,Banca Road,2256,2016-04-27,2016-05-16,Deliberate,North-east,217,147.724,-40.9955,summer before,extended,10,56410
+10766,Pelham Road,2115,2019-12-30,2020-02-03,Natural,South / Hobart,40,147.0355,-42.6015,summer before,extended,6,52872
+13349,Lanes Tier,2068,2024-02-23,2024-03-27,Accidental,Midlands / Derwent,77,146.7085,-42.3575,summer before,extended,2,51691
+13342,Mentmore Tier,1847,2024-02-21,2024-03-27,Undetermined,Central Plateau,91,146.619,-42.2505,summer before,extended,2,46163
+11996,Pipers Brook Road,1667,2022-02-10,2022-03-09,Undetermined,Midlands / Derwent,200,147.2495,-41.1225,summer before,extended,4,41669
+13343,Portal Road,1651,2024-02-21,2024-03-27,Undetermined,Central Plateau,94,146.562,-42.2465,summer before,extended,2,41276
+13329,Homestead Road,1500,2024-02-15,2024-05-03,Undetermined,North-east,232,147.6685,-40.855,summer before,extended,2,37488
+8054,Lake Bill,1398,2016-01-15,2016-04-22,Natural,Central Plateau,147,146.2035,-41.847,pre-fire (fallback),extended,10,34947
+8074,Maxwell River South,1376,2016-01-18,2016-05-13,Undetermined,South-west,117,145.947,-42.5135,pre-fire (fallback),extended,10,34394
+10140,Mount Solitary,1371,2019-01-15,2019-04-03,Natural,South-west,83,146.247,-42.9595,summer before,extended,7,34266
+10715,Golden Gate Road Mathinna,1289,2019-11-15,2019-12-05,Deliberate,North-east,167,147.92,-41.495,summer before,extended,6,32234
+14676,Nelsons Tier,1286,2025-10-19,2025-11-06,Undetermined,East,42,147.702,-42.73,summer before,extended,1,32147
+11176,"St Helens, St Helens",1261,2020-09-29,2020-10-16,Accidental,North-east,192,148.178,-41.33,summer before,extended,6,31528
+13207,Mount tanner leeka,1225,2023-09-26,2023-10-24,Accidental,Bass Strait islands,341,147.822,-39.881,summer before,extended,3,30617
+14734,Tasman Highway,1170,2025-12-09,2025-12-18,Undetermined,North-east,194,148.2895,-41.3445,summer before,initial,0,29242
+10144,Lake Pedder,1120,2019-01-15,2019-04-03,Natural,South-west,95,146.103,-42.946,summer before,extended,7,27998
+14889,Mcneills Road,1064,2026-04-23,2026-05-05,Undetermined,East,111,148.022,-42.0985,summer before,initial,0,26609
+10141,Anne Gorge,1036,2019-01-15,2019-05-06,Natural,South-west,71,146.3995,-43.0215,summer before,extended,7,25890
+8061,Tasman Highway Nunamara,872,2016-01-16,2016-03-08,Deliberate,North-east,170,147.35,-41.389,pre-fire (fallback),extended,10,21792
+10692,Dennistoun Road Bothwell,870,2019-10-29,2019-11-26,Undetermined,Midlands / Derwent,84,147.0495,-42.183,summer before,extended,7,21757
+7859,Alma Tier,841,2015-10-16,2015-11-13,Undetermined,Midlands / Derwent,93,147.009,-42.1085,pre-fire (fallback),extended,11,21022
+7842,Interlaken Road,828,2015-10-11,2015-11-13,Accidental,Central Plateau,96,146.955,-42.086,pre-fire (fallback),extended,11,20708
+14670,Labillardiere Peninsula,825,2025-10-02,2025-11-20,Deliberate,South / Hobart,58,147.117,-43.435,summer before,extended,1,20632
+7990,Connorville Road,808,2016-01-01,2016-01-14,Natural,Midlands / Derwent,119,147.1555,-41.8535,pre-fire (fallback),extended,10,20205
+14710,Beechford Road,693,2025-11-22,2025-12-01,Undetermined,Midlands / Derwent,206,146.944,-41.0815,summer before,initial,0,17336
+14730,Dolphin Sands Road,691,2025-12-04,2025-12-18,Undetermined,East,117,148.133,-42.084,summer before,initial,0,17272
+8026,Watsons Creek,661,2016-01-13,2016-03-24,Natural,West coast,209,145.2475,-41.765,pre-fire (fallback),extended,10,16518
+10005,Swanston Road,614,2018-11-01,2018-11-08,Accidental,East,76,147.78,-42.356,summer before,extended,8,15357
+11899,Sisters Beach Road,599,2021-12-11,2022-01-06,Accidental,North-west,262,145.5495,-40.929,summer before,extended,4,14977
+14032,Clarke Island,534,2025-02-24,2025-03-05,Undetermined,Bass Strait islands,281,148.2295,-40.4935,summer before,extended,1,13359
+10721,Stony Head,487,2019-11-23,2019-12-31,Deliberate,Midlands / Derwent,215,147.0345,-40.9915,summer before,extended,6,12165
+10186,Rapid River,477,2019-01-31,2019-04-08,Natural,North-west,255,145.189,-41.205,summer before,extended,7,11931
+7815,Grices Road,460,2015-10-05,2015-10-26,Accidental,South / Hobart,33,147.3605,-42.6325,pre-fire (fallback),extended,11,11506
+9408,Puncheon Point,431,2018-02-17,2018-03-01,Undetermined,Bass Strait islands,303,148.3445,-40.3115,summer before,extended,8,10770
+12534,Meadsfield Road,416,2022-12-03,2022-12-15,Undetermined,Midlands / Derwent,66,146.932,-42.3805,summer before,extended,3,10399
+11904,"Eldon Range, West Coast",389,2021-12-18,2021-12-29,Natural,West coast,169,145.7305,-41.905,summer before,extended,4,9732
+13935,North Ansons Road Ansons Bay,381,2024-10-25,2024-11-18,Accidental,North-east,222,148.236,-41.056,summer before,extended,2,9537
+7809,Gravelly Ridge,363,2015-10-03,2015-10-12,Accidental,Midlands / Derwent,46,147.4705,-42.5425,pre-fire (fallback),extended,11,9068
+7950,Lime Bay,334,2015-12-07,2016-01-11,Accidental,East,36,147.6955,-42.976,pre-fire (fallback),extended,10,8357
+12001,"Olegas Bluff, South West",327,2022-02-15,2022-06-06,Undetermined,South-west,115,145.9105,-42.633,summer before,extended,4,8184
+12089,BIGR2AP - Church Hill,327,2022-04-09,2022-05-06,Accidental,South / Hobart,36,147.39,-43.2365,summer before,extended,4,8176
+13254,"Tebrukanna Rd,  Pioneer",323,2023-11-11,2023-12-05,Natural,North-east,217,147.9845,-41.0425,summer before,extended,2,8066
+9224,Brooks Road,322,2017-12-15,2018-01-10,Accidental,North-east,192,148.239,-41.3495,summer before,extended,8,8040
+8077,Misery Flat,306,2016-01-19,2016-02-18,Natural,West coast,172,145.471,-42.1125,pre-fire (fallback),extended,10,7658
+10669,Tods Corner,287,2019-10-23,2019-11-26,Accidental,Central Plateau,109,146.811,-41.998,summer before,extended,7,7178
+8268,Royal Gorge,271,2016-04-26,2016-05-18,Accidental,East,126,147.836,-41.872,summer before,extended,10,6765
+8386,Marked Tree Road,261,2016-10-27,2016-11-02,Accidental,South / Hobart,47,146.9715,-42.563,summer before,extended,10,6530
+10133,Wombat Peak,258,2019-01-15,2019-04-03,Natural,South-west,89,146.186,-43.0605,summer before,extended,7,6442
+13258,Dolphin Sands Road,250,2023-11-12,2023-11-19,Undetermined,East,119,148.19,-42.0905,summer before,extended,3,6254
+10819,Rookery Road,233,2020-01-31,2020-02-06,Deliberate,Midlands / Derwent,184,146.868,-41.2915,summer before,extended,6,5834
+13365,Rosny Street,229,2024-03-06,2024-03-23,Deliberate,Midlands / Derwent,167,147.1985,-41.4205,summer before,extended,2,5726
+8523,Stonehurst Road,224,2016-12-17,2016-12-31,Undetermined,East,58,147.76,-42.553,summer before,extended,9,5599
+7917,Butlers Gorge Road - Butlers Gorge,217,2015-11-09,2015-12-07,Accidental,Central Plateau,97,146.384,-42.336,pre-fire (fallback),extended,10,5416
+12088,"Pilot Bay, Macquarie Heads",217,2022-04-09,2022-04-21,Accidental,West coast,185,145.197,-42.229,summer before,extended,4,5414
+7991,Musselroe Road,216,2016-01-02,2016-04-22,Accidental,North-east,242,148.1385,-40.843,pre-fire (fallback),extended,10,5405
+10689,Glenfern Road Glenfern,211,2019-10-29,2019-12-06,Undetermined,South / Hobart,24,146.9975,-42.8315,summer before,extended,6,5271
+10218,Midland Highway,210,2019-02-25,2019-03-05,Undetermined,South / Hobart,27,147.2885,-42.6765,summer before,extended,7,5250
+10107,Mona Vale,209,2018-12-29,2019-01-05,Natural,Midlands / Derwent,88,147.529,-42.1515,summer before,extended,7,5230
+14145,Palana Road Killicrankie,209,2025-04-16,2025-05-12,Accidental,Bass Strait islands,346,147.8965,-39.844,summer before,extended,1,5222
+8187,Golden Gate Rd,208,2016-04-11,2016-04-21,Deliberate,North-east,165,147.876,-41.51,summer before,extended,10,5193
+11432,Styx Road,201,2021-03-10,2021-04-09,Accidental,South / Hobart,42,146.7875,-42.7745,summer before,extended,5,5015
+10720,"Douglas Road, Lefroy",194,2019-11-23,2019-12-20,Deliberate,Midlands / Derwent,205,147.019,-41.088,summer before,extended,6,4845
+8251,Coal Mine Road,187,2016-04-19,2016-05-04,Accidental,South / Hobart,31,147.1695,-43.191,summer before,extended,10,4671
+7807,Bashan Road,175,2015-10-03,2015-10-04,Undetermined,Central Plateau,88,146.788,-42.214,pre-fire (fallback),extended,11,4374
+12717,Royal George Road,173,2023-03-26,2023-03-29,Undetermined,East,127,147.7225,-41.833,summer before,extended,3,4321
+13263,Ocean Beach Road Strahan,170,2023-11-28,2023-12-08,Deliberate,West coast,182,145.3,-42.1405,summer before,extended,2,4261
+9074,Curryjong Rivulet,169,2017-10-12,2017-10-23,Undetermined,East,45,147.6825,-42.665,summer before,extended,9,4226
+7968,Main Road George Town,163,2015-12-21,2016-01-04,Accidental,Midlands / Derwent,205,146.8515,-41.105,pre-fire (fallback),extended,10,4078
+13945,Sand River Road,161,2024-11-01,2024-12-29,Undetermined,East,54,147.7245,-42.5695,summer before,extended,1,4029
+8430,Highland Lakes Road,159,2016-11-19,2016-11-30,Accidental,Midlands / Derwent,58,147.075,-42.4215,summer before,extended,10,3985
+10178,Sawpit Hill Road,159,2019-01-29,2019-02-06,Undetermined,North-east,156,147.4145,-41.5235,summer before,extended,7,3977
+10230,Long Plains Road,157,2019-03-11,2019-04-17,Accidental,Midlands / Derwent,179,146.967,-41.3235,summer before,extended,7,3926
+14675,South Rhodes Road,157,2025-10-16,2025-10-27,Undetermined,East,68,147.726,-42.409,summer before,extended,1,3917
+14893,Granville Harbour,153,2026-04-25,2026-05-01,Accidental,West coast,217,145.0925,-41.792,summer before,initial,0,3835
+8078,Tyndall Reserve,145,2016-01-20,2016-03-01,Undetermined,West coast,170,145.668,-41.9415,pre-fire (fallback),extended,10,3618
+10281,Dolphin Sands,144,2019-04-09,2019-04-25,Accidental,East,121,148.2135,-42.0895,summer before,extended,7,3604
+11411,"MTRRR016APZ - Olivers Road, Cethana",142,2021-03-05,2021-03-24,Accidental,North-west,183,146.1795,-41.483,summer before,extended,5,3560
+7811,Brockley Road,136,2015-10-03,2015-10-12,Accidental,East,60,147.8025,-42.55,pre-fire (fallback),extended,11,3405
+7774,Rooks River Road,136,2015-09-27,2015-10-07,Undetermined,Bass Strait islands,292,148.0905,-40.361,pre-fire (fallback),extended,11,3397
+10690,Bluff Road,134,2019-10-29,2019-11-26,Accidental,South / Hobart,35,147.049,-42.652,summer before,extended,7,3339
+7802,Blackwells Road,128,2015-10-02,2015-10-12,Accidental,South / Hobart,26,147.103,-42.7185,pre-fire (fallback),extended,11,3212
+11244,Rothbury Road,125,2020-11-10,2020-11-12,Undetermined,Midlands / Derwent,116,147.218,-41.882,summer before,extended,6,3122
+12557,Nelsons Tier Road,124,2022-12-28,2023-01-10,Accidental,East,38,147.6525,-42.7305,summer before,extended,3,3089
+10089,Conleys Point,122,2018-12-24,2019-02-02,Accidental,South / Hobart,57,147.221,-43.4345,summer before,extended,7,3044
+11236,Rockmount Road,117,2020-11-08,2020-11-17,Undetermined,South / Hobart,50,146.798,-42.63,summer before,extended,6,2922
+9107,Lovely Banks Road,116,2017-10-17,2017-10-23,Undetermined,Midlands / Derwent,49,147.261,-42.482,summer before,extended,9,2888
+7897,Lake Leake Road,115,2015-10-28,2015-10-29,Accidental,East,111,147.711,-41.9825,pre-fire (fallback),extended,11,2883
+14029,Rose Hill,115,2025-02-23,2025-03-07,Undetermined,Midlands / Derwent,60,147.2325,-42.384,summer before,extended,1,2866
+13968,Stonehenge Road,113,2024-11-16,2024-12-20,Undetermined,East,73,147.6835,-42.3455,summer before,extended,1,2813
+9079,Barton Vale Road,112,2017-10-15,2017-10-30,Undetermined,South / Hobart,40,147.4535,-42.592,summer before,extended,9,2811
+12719,Inglewood Road,110,2023-03-26,2023-04-03,Undetermined,Midlands / Derwent,64,147.58,-42.393,summer before,extended,3,2762
+10135,Wilmot Range,110,2019-01-15,2019-04-03,Natural,South-west,106,145.964,-42.8875,summer before,extended,7,2738
+9953,Hall Road,109,2018-10-13,2018-10-19,Accidental,South / Hobart,51,146.7535,-42.6635,summer before,extended,8,2731
+11906,"Mount Rufus, Lake St Clair",105,2021-12-18,2021-12-29,Natural,Central Plateau,130,146.0715,-42.14,summer before,extended,4,2637
+13195,Springhill Bottom Road,105,2023-09-18,2023-10-06,Undetermined,South / Hobart,40,147.327,-42.57,summer before,extended,3,2624
+10691,Big Hill Road Lefroy,105,2019-10-29,2019-11-22,Deliberate,Midlands / Derwent,203,146.992,-41.1075,summer before,extended,7,2620
+14727,New Country Marsh Road,104,2025-12-04,2025-12-15,Undetermined,Midlands / Derwent,51,147.552,-42.512,summer before,initial,0,2594
+12565,Bonnet Bay Lake Pedder,102,2022-12-31,2023-02-25,Natural,South-west,90,146.1655,-42.915,summer before,extended,3,2545
+14768,Southwood Road,102,2026-02-06,2026-02-17,Deliberate,South / Hobart,36,146.8665,-43.0615,summer before,initial,0,2544

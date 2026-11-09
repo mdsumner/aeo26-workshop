@@ -1264,6 +1264,66 @@ def _folium_map(summaries: list[dict], colours: dict) -> None:
 # Command line
 # ----------------------------------------------------------------------------------------------
 
+FERN_TREE = (147.263, -42.923)   # lon, lat: distance reference for --candidates
+
+
+def region_of(lon: float, lat: float) -> str:
+    """Rough Tasmanian region from a fire's centre (for triage only)."""
+    if lat > -40.6 or lon < 144.3:
+        return "Bass Strait islands"
+    if lat > -41.6 and lon < 146.3:
+        return "North-west"
+    if lat > -41.75 and lon >= 147.3:
+        return "North-east"
+    if lon >= 147.6:
+        return "East"
+    if -42.35 < lat < -41.55 and 146.0 < lon < 147.0:
+        return "Central Plateau"
+    if lat < -42.3 and lon < 146.7:
+        return "South-west"
+    if lat < -42.55 and lon >= 146.7:
+        return "South / Hobart"
+    if lon < 145.9:
+        return "West coast"
+    return "Midlands / Derwent"
+
+
+def candidates(min_ha: float = 100, today: dt.date | None = None) -> list[dict]:
+    """Every Fire History bushfire since 2015-16 >= min_ha not yet a site, tagged for triage."""
+    today = today or dt.date.today()
+    last = latest_summer(today)
+    done = {v["fire_id"] for v in SITES.values()}
+    rows, offset = [], 0
+    while True:
+        d = _get_json(FIRE_LAYER + "/query", dict(
+            where=f"FIRE_TYPE='Bushfire' AND IGN_SEASON>={MIN_SEASON} AND FIRE_AR_HA>={min_ha}",
+            outFields=FIRE_FIELDS, returnGeometry="true", outSR=4326, maxAllowableOffset=0.01,
+            orderByFields="FIRE_AR_HA DESC", resultOffset=offset, resultRecordCount=1000, f="json"))
+        for f in d.get("features", []):
+            r = _fire_record(f["attributes"])
+            if r["fire_id"] in done or r["ignition"] is None:
+                continue
+            pts = [p for ring in f["geometry"]["rings"] for p in ring]
+            lon = (min(p[0] for p in pts) + max(p[0] for p in pts)) / 2
+            lat = (min(p[1] for p in pts) + max(p[1] for p in pts)) / 2
+            end = r["end"] or r["ignition"]
+            km = math.hypot((lon - FERN_TREE[0]) * 81.6, (lat - FERN_TREE[1]) * 111.0)
+            summer_base = summer_window(pre_summer_year(r["ignition"]))[0] >= dt.date(2015, 7, 1)
+            first = first_summer_after(end)
+            rows.append(dict(
+                fire_id=r["fire_id"], name=r["name"], area_ha=round(r["area_ha"]),
+                ignition=r["ignition"].isoformat(), declared_out=end.isoformat(), cause=r["cause"],
+                region=region_of(lon, lat), km_from_fern_tree=round(km), lon=round(lon, 4),
+                lat=round(lat, 4), baseline="summer before" if summer_base else "pre-fire (fallback)",
+                assessment="extended" if first <= last else "initial",
+                recovery_summers=max(0, last - first + 1) if first <= last else 0,
+                pixels_20m=round(r["area_ha"] / 0.04)))
+        if not d.get("exceededTransferLimit"):
+            break
+        offset += 1000
+    return sorted(rows, key=lambda x: -x["area_ha"])
+
+
 def _print_fires(fires: list[dict]) -> None:
     for f in fires:
         print(f"  --fire-id {f['fire_id']:<6} {f['name'][:34]:34} {f['area_ha']:>9,.0f} ha  "
@@ -1282,6 +1342,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--lat", type=float, help="latitude (with --lon)")
     p.add_argument("--all", action="store_true", help="every built-in site, then the overview")
     p.add_argument("--overview", action="store_true", help="overview figure and interactive map")
+    p.add_argument("--candidates", action="store_true",
+                   help="triage every other bushfire since 2015-16 (>= 100 ha) to "
+                        "outputs/tasmania/candidates.csv")
     p.add_argument("--max-dates", type=int, default=4, help="images per composite (default 4)")
     p.add_argument("--refresh", action="store_true", help="ignore cached composites")
     a = p.parse_args(argv)
@@ -1292,6 +1355,12 @@ def main(argv: list[str] | None = None) -> int:
             rec, _ = get_fire(v["fire_id"])
             print(f"  {k:16} {rec['name']:22} ignited {rec['ignition']}  {rec['area_ha']:>8,.0f} ha"
                   f"  {v['region']}")
+        return 0
+    if a.candidates:
+        rows = candidates()
+        OUTPUTS.mkdir(parents=True, exist_ok=True)
+        _write_csv(OUTPUTS / "candidates.csv", rows)
+        print(f"{len(rows)} candidate fires written to outputs/tasmania/candidates.csv")
         return 0
     if a.search is not None:
         _print_fires(search_fires(a.search))
