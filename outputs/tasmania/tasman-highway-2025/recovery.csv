@@ -1,0 +1,2 @@
+site,summer,years_since,dates,control_drop,control_ndvi,deficit_unburnt,ndvi_unburnt,deficit_low,ndvi_low,deficit_moderate-low,ndvi_moderate-low,deficit_moderate-high,ndvi_moderate-high,deficit_high,ndvi_high
+tasman-highway-2025,2026,1,2026-01-13;2026-02-02;2026-02-07;2026-03-14;2026-03-31;2026-04-03,0.0753,0.6327,0.0642,0.5525,0.1984,0.5306,0.3543,0.4498,0.5267,0.379,0.7432,0.3239
