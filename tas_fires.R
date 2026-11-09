@@ -584,14 +584,15 @@ draw_figures <- function(out_dir, rec, region, end, geom, grid, panels, initial,
   nd <- lapply(seq_len(nrow(SEVERITY)), function(i) get(paste0("ndvi_", slugify(SEVERITY$name[i]))))
   has <- vapply(def, function(v) any(!is.na(v)), TRUE)
   xl <- range(years) + c(-0.3, 0.3)
-  plot(NA, xlim = xl, ylim = range(c(0, unlist(def[has])), na.rm = TRUE), xaxt = "n", xlab = "",
+  plot(NA, xlim = xl, ylim = range(c(0, 0.1, unlist(def[has])), na.rm = TRUE), xaxt = "n", xlab = "",
        ylab = "NBR deficit vs before the fire\n(unitless; 0 = fully recovered)")
   title("Burn-ratio deficit by severity class, relative to unburnt land", cex.main = 0.8, font.main = 1)
   abline(h = 0, lwd = 0.8); grid(nx = NA, ny = NULL, col = "grey85", lty = 1)
   for (i in which(has)) lines(years, def[[i]], type = "o", pch = 16, col = col_of(i), lwd = 1.5)
   axis(1, years, las = 2); mtext("Summer (Dec-Mar, labelled by the year it ends)", 1, line = 3.5, cex = 0.7)
-  legend("topright", SEVERITY$name[has], col = vapply(which(has), col_of, ""), lwd = 1.5, pch = 16,
-         cex = 0.7, bg = "white")
+  if (any(has)) legend("topright", SEVERITY$name[has], col = vapply(which(has), col_of, ""), lwd = 1.5,
+                       pch = 16, cex = 0.7, bg = "white")
+  else text(mean(xl), 0.5 * par("usr")[4], "No severity class has 50 or more pixels", cex = 0.75)
   ctrl <- get("control_ndvi")
   yl <- range(c(unlist(nd[has]), ctrl, unlist(pre_ndvi), pre_ndvi_ctrl), na.rm = TRUE)
   plot(NA, xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "Median NDVI (unitless)")
