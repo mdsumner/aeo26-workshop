@@ -6,8 +6,21 @@ free Sentinel-2 satellite images and the State's official fire boundaries.
 
 ## Run it
 
+All raster reading, warping and writing goes through GDAL's own Python bindings (`osgeo.gdal`).
+The image search is plain JSON from DEA's STAC API, fetched with `requests`: no STAC library is
+needed. The bindings must match an installed GDAL (3.8 or later), so install them with GDAL, not
+from PyPI on their own:
+
+| Where | GDAL bindings |
+|---|---|
+| Docker | `ghcr.io/hypertidy/gdal-r-python` already has them (GDAL 3.13), and R's `gdalraster` and `terra` too |
+| Ubuntu or Debian | `sudo apt install python3-gdal` (use the system `python3`) |
+| conda, mamba or pixi | the `gdal` package from conda-forge |
+
+Then the rest, with pip:
+
 ```bash
-pip install -r requirements.txt pyproj shapely matplotlib-scalebar requests pyshp
+pip install numpy shapely matplotlib matplotlib-scalebar requests pyshp pillow folium pytest
 ```
 
 ```bash

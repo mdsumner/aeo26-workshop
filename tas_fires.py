@@ -205,13 +205,35 @@ def pre_summer_year(ignition: dt.date) -> int:
     return year
 
 
+# ----------------------------------------------------------------------------------------------
+# GDAL (osgeo.gdal / osr / ogr): all raster reading, warping, writing and coordinate transforms
+# ----------------------------------------------------------------------------------------------
+
+def _gdal():
+    from osgeo import gdal
+    gdal.UseExceptions()
+    return gdal
+
+
+def _srs(code: str):
+    """osr.SpatialReference in longitude/latitude (x/y) axis order, whatever the CRS says."""
+    from osgeo import osr
+    osr.UseExceptions()
+    s = osr.SpatialReference()
+    s.SetFromUserInput(code)
+    s.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+    return s
+
+
+def _ct(src: str, dst: str):
+    from osgeo import osr
+    return osr.CoordinateTransformation(_srs(src), _srs(dst))
+
+
 def true_north_angle(x: float, y: float) -> float:
     """Angle of true north, in degrees clockwise from grid up, at EPSG:3577 point (x, y)."""
-    from pyproj import Transformer
-    to_ll = Transformer.from_crs(CRS, "EPSG:4326", always_xy=True)
-    to_xy = Transformer.from_crs("EPSG:4326", CRS, always_xy=True)
-    lon, lat = to_ll.transform(x, y)
-    x2, y2 = to_xy.transform(lon, lat + 0.05)
+    lon, lat, _ = _ct(CRS, "EPSG:4326").TransformPoint(x, y)
+    x2, y2, _ = _ct("EPSG:4326", CRS).TransformPoint(lon, lat + 0.05)
     return math.degrees(math.atan2(x2 - x, y2 - y))
 
 
@@ -229,9 +251,9 @@ class Grid:
     height: int
 
     @property
-    def transform(self):
-        from rasterio.transform import from_origin
-        return from_origin(self.x0, self.y0, self.res, self.res)
+    def geotransform(self) -> tuple[float, ...]:
+        """GDAL geotransform: (left, pixel width, 0, top, 0, -pixel height)."""
+        return (self.x0, self.res, 0.0, self.y0, 0.0, -self.res)
 
     @property
     def bounds(self) -> tuple[float, float, float, float]:
@@ -251,8 +273,7 @@ class Grid:
         return Grid(self.x0, self.y0, self.res * f, self.width // f, self.height // f)
 
     def bounds_lonlat(self) -> list[float]:
-        from rasterio.warp import transform_bounds
-        return list(transform_bounds(CRS, "EPSG:4326", *self.bounds, densify_pts=21))
+        return list(_ct(CRS, "EPSG:4326").TransformBounds(*self.bounds, 21))
 
 
 def grid_for_bounds(bounds: tuple[float, float, float, float], buffer_m: float = BUFFER_M,
@@ -408,15 +429,19 @@ def group_by_date(items: list[dict]) -> list[tuple[str, list[dict], float]]:
 
 
 def _warp(url: str, grid: Grid) -> np.ndarray:
-    import rasterio
-    from rasterio.enums import Resampling
-    from rasterio.vrt import WarpedVRT
+    """Band 1 of `url` (a path or an https URL) warped onto `grid`, nearest neighbour.
+
+    Only the bytes covering the grid are read (GDAL /vsicurl/ range requests). Areas the file
+    doesn't cover come back as the file's nodata value. Overviews are not used, so pixels are
+    always sampled from full resolution."""
+    gdal = _gdal()
+    src = "/vsicurl/" + url if url.startswith(("http://", "https://")) else url
     for i in range(4):
         try:
-            with rasterio.open(url) as src, WarpedVRT(
-                    src, crs=CRS, transform=grid.transform, width=grid.width, height=grid.height,
-                    resampling=Resampling.nearest, src_nodata=src.nodata, nodata=src.nodata) as v:
-                return v.read(1)
+            ds = gdal.Warp("", src, format="MEM", dstSRS=CRS, outputBounds=grid.bounds,
+                           width=grid.width, height=grid.height, resampleAlg="near",
+                           overviewLevel="NONE", multithread=False)
+            return ds.GetRasterBand(1).ReadAsArray()
         except Exception as exc:
             missing = "403" in str(exc) or "404" in str(exc)   # S3 answers 403 for a missing file
             if i == 3 or (missing and i == 2):
@@ -449,22 +474,31 @@ def read_date(items: list[dict], grid: Grid) -> tuple[dict, float]:
 
 
 def _write_composite(path: Path, comp: dict, grid: Grid, meta: dict) -> None:
-    import rasterio
+    gdal = _gdal()
     names = list(BANDS) + ["n_clear"]
     path.parent.mkdir(parents=True, exist_ok=True)
-    with rasterio.open(path, "w", driver="GTiff", width=grid.width, height=grid.height, count=len(names),
-                       dtype="float32", crs=CRS, transform=grid.transform, nodata=np.nan,
-                       compress="deflate", predictor=3, tiled=True) as dst:
-        for i, n in enumerate(names, 1):
-            dst.write(comp[n].astype("float32"), i)
-            dst.set_band_description(i, n)
+    ds = gdal.GetDriverByName("GTiff").Create(
+        str(path), grid.width, grid.height, len(names), gdal.GDT_Float32,
+        options=["COMPRESS=DEFLATE", "PREDICTOR=3", "TILED=YES"])
+    ds.SetGeoTransform(grid.geotransform)
+    ds.SetSpatialRef(_srs(CRS))
+    for i, n in enumerate(names, 1):
+        band = ds.GetRasterBand(i)
+        band.SetNoDataValue(float("nan"))
+        band.SetDescription(n)
+        band.WriteArray(comp[n].astype("float32"))
+    ds = None   # closes and flushes the file
     path.with_suffix(".json").write_text(json.dumps(meta, indent=1))
 
 
 def _read_composite(path: Path) -> tuple[dict, dict]:
-    import rasterio
-    with rasterio.open(path) as src:
-        comp = {src.descriptions[i - 1]: src.read(i) for i in range(1, src.count + 1)}
+    gdal = _gdal()
+    ds = gdal.Open(str(path))
+    comp = {}
+    for i in range(1, ds.RasterCount + 1):
+        band = ds.GetRasterBand(i)
+        comp[band.GetDescription()] = band.ReadAsArray()
+    ds = None
     return comp, json.loads(path.with_suffix(".json").read_text())
 
 
@@ -524,20 +558,36 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
 # ----------------------------------------------------------------------------------------------
 
 def to_albers(geom):
+    """A shapely geometry from longitude/latitude (EPSG:4326) to EPSG:3577 metres."""
     import shapely
-    from pyproj import Transformer
-    t = Transformer.from_crs("EPSG:4326", CRS, always_xy=True)
-    return shapely.transform(geom, lambda x, y: t.transform(x, y), interleaved=False)
+    ct = _ct("EPSG:4326", CRS)
+
+    def f(xy: np.ndarray) -> np.ndarray:
+        if len(xy) == 0:
+            return xy
+        return np.asarray(ct.TransformPoints(np.ascontiguousarray(xy, "float64")))[:, :2]
+    return shapely.transform(geom, f)
 
 
 def rasterize(geoms: list, grid: Grid) -> np.ndarray:
-    """True inside any of the (EPSG:3577) geometries."""
-    from rasterio.features import geometry_mask
+    """True inside any of the (EPSG:3577) geometries: pixels whose centre is inside."""
+    from osgeo import ogr
+    gdal = _gdal()
     geoms = [g for g in geoms if g is not None and not g.is_empty]
     if not geoms:
         return np.zeros((grid.height, grid.width), bool)
-    return geometry_mask(geoms, out_shape=(grid.height, grid.width), transform=grid.transform,
-                         invert=True)
+    drv = ogr.GetDriverByName("MEM") or ogr.GetDriverByName("Memory")   # "MEM" from GDAL 3.11
+    vds = drv.CreateDataSource("")
+    lyr = vds.CreateLayer("geoms", srs=_srs(CRS))
+    for g in geoms:
+        feat = ogr.Feature(lyr.GetLayerDefn())
+        feat.SetGeometry(ogr.CreateGeometryFromWkb(g.wkb))
+        lyr.CreateFeature(feat)
+    rds = gdal.GetDriverByName("MEM").Create("", grid.width, grid.height, 1, gdal.GDT_Byte)
+    rds.SetGeoTransform(grid.geotransform)
+    rds.SetSpatialRef(_srs(CRS))
+    gdal.RasterizeLayer(rds, [1], lyr, burn_values=[1])
+    return rds.GetRasterBand(1).ReadAsArray().astype(bool)
 
 
 def _rings(geom):
@@ -879,22 +929,29 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
 def _severity_overlay(cls: np.ndarray, grid: Grid, png: Path, meta: Path) -> None:
     from matplotlib.colors import to_rgba
     from PIL import Image
-    from rasterio.warp import Resampling, calculate_default_transform, reproject
-    tr, w, h = calculate_default_transform(CRS, "EPSG:4326", grid.width, grid.height, *grid.bounds)
+    gdal = _gdal()
+    src = gdal.GetDriverByName("MEM").Create("", grid.width, grid.height, 1, gdal.GDT_Int16)
+    src.SetGeoTransform(grid.geotransform)
+    src.SetSpatialRef(_srs(CRS))
+    src.GetRasterBand(1).SetNoDataValue(-1)
+    src.GetRasterBand(1).WriteArray(cls.astype("int16"))
+    # GDAL's default longitude/latitude grid for this raster (a VRT: nothing is computed yet),
+    # then the same extent origin with pixels `scale` times larger, so the PNG is at most ~1500 px
+    vrt = gdal.Warp("", src, format="VRT", dstSRS="EPSG:4326")
+    w, h = vrt.RasterXSize, vrt.RasterYSize
+    west, dx, _, north, _, dy = vrt.GetGeoTransform()
     scale = max(1, int(math.ceil(max(w, h) / 1500)))
     w, h = w // scale, h // scale
-    tr = tr * tr.scale(scale, scale)
-    dst = np.full((h, w), -1, "int8")
-    reproject(cls, dst, src_transform=grid.transform, src_crs=CRS, dst_transform=tr,
-              dst_crs="EPSG:4326", resampling=Resampling.nearest, src_nodata=-1, dst_nodata=-1)
+    east, south = west + dx * scale * w, north + dy * scale * h
+    out = gdal.Warp("", src, format="MEM", dstSRS="EPSG:4326", outputBounds=(west, south, east, north),
+                    width=w, height=h, resampleAlg="near", srcNodata=-1, dstNodata=-1)
+    dst = out.GetRasterBand(1).ReadAsArray()
     rgba = np.zeros((h, w, 4), "uint8")
     for i, c in enumerate(SEVERITY_COLOURS):
         if i == 0:
             continue   # unburnt transparent
         rgba[dst == i] = [int(255 * v) for v in to_rgba(c, 0.8)]
     Image.fromarray(rgba).save(png)
-    west, north = tr.c, tr.f
-    east, south = west + tr.a * w, north + tr.e * h
     meta.write_text(json.dumps(dict(bounds=[[south, west], [north, east]])))
 
 
