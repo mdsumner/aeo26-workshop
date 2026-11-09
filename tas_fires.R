@@ -3,8 +3,9 @@
 #
 # This is a line-by-line twin of the analysis in tas_fires.py (fire boundary, composites, dNBR,
 # severity areas, recovery), so the two can be compared. It writes the same summary.csv and
-# recovery.csv, to outputs/tasmania-r/<site>/, from its own image cache in downloads/tasmania-r/.
-# It does not draw the figures or the web pages: tas_fires.py does that.
+# recovery.csv, and the three figures (before_after.png, dnbr_severity.png, recovery.png, drawn with
+# ximage and base graphics), to outputs/tasmania-r/<site>/, from its own image cache in
+# downloads/tasmania-r/. It does not make the overview or the web pages: tas_fires.py does that.
 #
 # All raster and geometry work goes through GDAL (gdalraster). The fire boundaries come from
 # theLIST's ArcGIS REST service and the image list from DEA's STAC API: both are plain JSON over
@@ -15,11 +16,13 @@
 #   Rscript tas_fires.R --site glenlusk --compare   # then compare with the Python outputs
 #   Rscript tas_fires.R --compare-only --site glenlusk
 #
-# Packages: gdalraster, jsonlite, curl; matrixStats if installed (much faster medians).
+# Packages: gdalraster, jsonlite, curl, ximage (figures); matrixStats if installed (much faster
+# medians) and ragg if installed (PNG output).
 
 suppressPackageStartupMessages({
   library(gdalraster)
   library(jsonlite)
+  library(ximage)
 })
 
 # GDAL settings for reading cloud-optimised GeoTIFFs over HTTPS (as in tas_fires.py)
@@ -450,6 +453,186 @@ rasterize_mask <- function(geoms, g) {
 }
 
 # ---------------------------------------------------------------------------------------------
+# Figures with ximage (base graphics): each grid is drawn at its EPSG:3577 extent, in metres
+# ---------------------------------------------------------------------------------------------
+
+SEVERITY_COLOURS <- c("#d9d9d9", "#fed976", "#fd8d3c", "#e31a1c", "#800026")   # grey + YlOrRd
+ATTRIBUTION <- paste("Sentinel-2: Digital Earth Australia ARD (Geoscience Australia, CC BY 4.0;",
+                     "contains Copernicus data). Fire boundaries: Fire History, theLIST (c) State of",
+                     "Tasmania, CC BY 3.0 AU.")
+
+grid_extent <- function(g) { b <- grid_bounds(g); c(b[1], b[3], b[2], b[4]) }   # xmin, xmax, ymin, ymax
+
+# Angle of true north, radians clockwise from grid up, at EPSG:3577 point (x, y)
+true_north <- function(x, y) {
+  ll <- transform_xy(cbind(x, y), CRS, "EPSG:4326")
+  p <- transform_xy(cbind(ll[1], ll[2] + 0.05), "EPSG:4326", CRS)
+  atan2(p[1] - x, p[2] - y)
+}
+
+# Scale bar (lower left) and true-north arrow (upper right) on the current map panel
+map_furniture <- function(ext) {
+  w <- ext[2] - ext[1]; h <- ext[4] - ext[3]
+  target <- 0.25 * w
+  p <- 10^floor(log10(target))
+  len <- max(c(1, 2, 5) * p * (c(1, 2, 5) * p <= target))
+  x0 <- ext[1] + 0.05 * w; y0 <- ext[3] + 0.06 * h; bh <- 0.018 * h
+  rect(x0 - 0.02 * w, y0 - 0.025 * h, x0 + len + 0.02 * w, y0 + 0.075 * h,
+       col = adjustcolor("white", 0.75), border = NA)
+  rect(x0 + c(0, len / 2), y0, x0 + c(len / 2, len), y0 + bh, col = c("black", "white"), border = "black")
+  text(x0 + len / 2, y0 + bh, if (len >= 1000) sprintf("%g km", len / 1000) else sprintf("%g m", len),
+       pos = 3, cex = 0.7, offset = 0.3)
+  ang <- true_north(mean(ext[1:2]), mean(ext[3:4]))
+  L <- 0.11 * min(w, h)
+  bx <- ext[1] + 0.92 * w; by <- ext[3] + 0.78 * h
+  tx <- bx + L * sin(ang); ty <- by + L * cos(ang)
+  arrows(bx, by, tx, ty, length = 0.08, lwd = 1.8, angle = 25)
+  r <- 0.035 * min(w, h)
+  rect(tx - r, ty + 0.2 * r, tx + r, ty + 2.2 * r, col = adjustcolor("white", 0.75), border = NA)
+  text(tx, ty + 1.2 * r, "N", font = 2, cex = 0.8)
+}
+
+# Fire boundary (EPSG:3577 WKB) drawn as rings
+plot_outline <- function(wkb, col = "#00e5ff", lwd = 1) {
+  xy <- g_coords(wkb)
+  for (ring in split(xy, interaction(xy$part_id, xy$ring_id, drop = TRUE))) lines(ring$x, ring$y, col = col, lwd = lwd)
+}
+
+fmt_dates <- function(meta) {
+  d <- as.Date(unlist(meta$dates))
+  if (!length(d)) return("no clear images")
+  f <- function(x) format(x, "%d %b %Y")
+  span <- if (min(d) == max(d)) f(min(d)) else paste(f(min(d)), "to", f(max(d)))
+  sprintf("%s (median of %d date%s)", span, length(d), if (length(d) > 1) "s" else "")
+}
+
+# RGB = SWIR2, NIR, red with a fixed per-band stretch; no data -> white. A hex-colour matrix.
+false_colour <- function(c, lo, hi) {
+  s <- function(b, i) pmin(pmax((c[[b]] - lo[i]) / (hi[i] - lo[i]), 0), 1)
+  r <- s("swir2", 1); g <- s("nir", 2); b <- s("red", 3)
+  bad <- !is.finite(r) | !is.finite(g) | !is.finite(b)
+  r[bad] <- 1; g[bad] <- 1; b[bad] <- 1
+  matrix(rgb(r, g, b), nrow(r), ncol(r))
+}
+
+map_panel <- function(img, g, main, geom, outline = "#00e5ff", ...) {
+  ext <- grid_extent(g)
+  ximage(img, extent = ext, asp = 1, axes = FALSE, na.col = "white", bty = "n", ...)
+  rect(ext[1], ext[3], ext[2], ext[4])   # frame the map itself, not the (wider) plot region
+  plot_outline(geom, col = outline, lwd = if (outline == "#00e5ff") 1.2 else 0.9)
+  title(main, cex.main = 0.85, font.main = 1, line = 0.6)
+  map_furniture(ext)
+}
+
+open_png <- function(path, width, height) {
+  if (requireNamespace("ragg", quietly = TRUE)) ragg::agg_png(path, width, height, units = "in", res = 130)
+  else png(path, width, height, units = "in", res = 130)
+}
+
+draw_figures <- function(out_dir, rec, region, end, geom, grid, panels, initial, first, last,
+                         dnbr, cls, offset, base_name, sev_name, s1_meta, stats, rows,
+                         pre_ndvi, pre_ndvi_ctrl, pre) {
+  caption <- sprintf("%s fire (FIRE_ID %d), ignited %s, declared out %s. %s", rec$name,
+                     as.integer(stats$fire_id), format(rec$ignition, "%d %b %Y"),
+                     format(end, "%d %b %Y"), ATTRIBUTION)
+  title_site <- sprintf("%s fire, %s%s", rec$name, format(rec$ignition, "%Y"),
+                        if (nzchar(region)) paste0(": ", region) else "")
+  asp <- grid$height / grid$width
+  wrap <- function(x, n) paste(strwrap(x, n), collapse = "\n")
+
+  # 1. false colour before / after (same stretch for every panel, from the pre-fire composite)
+  lo <- vapply(c("swir2", "nir", "red"), function(b) pctl(pre[[b]], 0.02), 0)
+  hi <- vapply(c("swir2", "nir", "red"), function(b) pctl(pre[[b]], 0.98), 0)
+  n <- length(panels)
+  open_png(file.path(out_dir, "before_after.png"), 4.6 * n, 4.6 * asp + 1.6)
+  par(mfrow = c(1, n), mar = c(0.5, 0.5, 3, 0.5), oma = c(3, 0, 3.5, 0))
+  for (p in panels) map_panel(false_colour(p$comp, lo, hi), p$grid,
+                              paste0(p$title, "\n", fmt_dates(p$meta)), geom)
+  mtext(paste0(title_site, "\n", wrap(sprintf(paste(
+    "Sentinel-2 false colour (R = SWIR2 B12, G = NIR B8A, B = red B04), same stretch for all panels",
+    "(reflectance %.2f-%.2f); burnt ground shows magenta-pink, healthy forest green, buttongrass and",
+    "sedgeland purple; cyan = official boundary"), min(lo), max(hi)), 60 * n)),
+    outer = TRUE, side = 3, line = 0.2, cex = 0.7)
+  mtext(wrap(caption, 45 * n), outer = TRUE, side = 1, line = 2, cex = 0.55)
+  dev.off()
+
+  # 2. dNBR (diverging, centred on zero, clamped to +-0.8) and severity class
+  open_png(file.path(out_dir, "dnbr_severity.png"), 11, 5 * asp + 2.4)
+  layout(matrix(c(1, 2, 3, 4, 4, 4), 2, byrow = TRUE), widths = c(1, 0.14, 1), heights = c(1, 0.13))
+  par(oma = c(2.5, 0, 2, 0))
+  pal <- hcl.colors(101, "BrBG", rev = TRUE)
+  brk <- seq(-0.8, 0.8, length.out = 102)
+  par(mar = c(0.5, 0.5, 3, 0.5))
+  map_panel(pmin(pmax(dnbr, -0.8), 0.8), grid, col = pal, breaks = brk, main = sprintf(
+    "dNBR: %s minus %s\n%s; offset %+.3f from unburnt land removed", base_name, sev_name,
+    fmt_dates(s1_meta), offset), geom = geom, outline = "#0072B2")
+  par(mar = c(2, 0.6, 3.5, 4.2))
+  image(1, brk[-1] - diff(brk) / 2, matrix(brk[-1] - diff(brk) / 2, 1), col = pal, breaks = brk,
+        axes = FALSE, xlab = "", ylab = "")
+  axis(4, las = 1, cex.axis = 0.7); box()
+  mtext("dNBR (unitless; > 0 = burn, < 0 = greener; beyond +-0.8 shown at the end colours)",
+        side = 4, line = 2.6, cex = 0.55)
+  par(mar = c(0.5, 0.5, 3, 0.5))
+  sev <- matrix("white", nrow(cls), ncol(cls))   # class -1 = no clear data
+  sev[cls >= 0] <- SEVERITY_COLOURS[cls[cls >= 0] + 1L]
+  map_panel(sev, grid, sprintf(paste0(
+    "Burn severity class (Key & Benson dNBR thresholds), %s\n%s%% of the official boundary burnt ",
+    "(dNBR >= 0.10); white = no clear data"), sev_name, stats$burnt_inside_pct), geom, outline = "#0072B2")
+  par(mar = c(0, 0, 0, 0))
+  plot.new()
+  labs <- sprintf("%s (%s%%)", SEVERITY$name, vapply(SEVERITY$name, function(s)
+    format(stats[[paste0("pct_", slugify(s))]]), ""))
+  legend("center", c(labs, "Official boundary"), fill = c(SEVERITY_COLOURS, NA),
+         border = c(rep("black", 5), NA), lty = c(rep(NA, 5), 1), col = c(rep(NA, 5), "#0072B2"),
+         ncol = 3, cex = 0.75, bty = "n", title = "% of the official boundary area")
+  mtext(title_site, outer = TRUE, side = 3, line = 0.5, cex = 0.8)
+  mtext(wrap(paste(caption, "Thresholds are generic, not calibrated for Tasmanian vegetation."), 140),
+        outer = TRUE, side = 1, line = 1.5, cex = 0.55)
+  dev.off()
+
+  # 3. recovery by severity class
+  years <- vapply(rows, function(r) r$summer, 0)
+  col_of <- function(i) if (i == 1) "#737373" else SEVERITY_COLOURS[i]
+  get <- function(field) vapply(rows, function(r) { v <- r[[field]]; if (is.null(v) || is.na(v)) NA_real_ else v }, 0)
+  open_png(file.path(out_dir, "recovery.png"), 11, 4.6)
+  par(mfrow = c(1, 2), mar = c(5.5, 5, 2.5, 1), oma = c(2, 0, 2, 0), las = 1, cex.axis = 0.75, cex.lab = 0.8)
+  def <- lapply(seq_len(nrow(SEVERITY)), function(i) get(paste0("deficit_", slugify(SEVERITY$name[i]))))
+  nd <- lapply(seq_len(nrow(SEVERITY)), function(i) get(paste0("ndvi_", slugify(SEVERITY$name[i]))))
+  has <- vapply(def, function(v) any(!is.na(v)), TRUE)
+  xl <- range(years) + c(-0.3, 0.3)
+  plot(NA, xlim = xl, ylim = range(c(0, unlist(def[has])), na.rm = TRUE), xaxt = "n", xlab = "",
+       ylab = "NBR deficit vs before the fire\n(unitless; 0 = fully recovered)")
+  title("Burn-ratio deficit by severity class, relative to unburnt land", cex.main = 0.8, font.main = 1)
+  abline(h = 0, lwd = 0.8); grid(nx = NA, ny = NULL, col = "grey85", lty = 1)
+  for (i in which(has)) lines(years, def[[i]], type = "o", pch = 16, col = col_of(i), lwd = 1.5)
+  axis(1, years, las = 2); mtext("Summer (Dec-Mar, labelled by the year it ends)", 1, line = 3.5, cex = 0.7)
+  legend("topright", SEVERITY$name[has], col = vapply(which(has), col_of, ""), lwd = 1.5, pch = 16,
+         cex = 0.7, bg = "white")
+  ctrl <- get("control_ndvi")
+  yl <- range(c(unlist(nd[has]), ctrl, unlist(pre_ndvi), pre_ndvi_ctrl), na.rm = TRUE)
+  plot(NA, xlim = xl, ylim = yl, xaxt = "n", xlab = "", ylab = "Median NDVI (unitless)")
+  title("Greenness (NDVI) by severity class; dotted = before the fire", cex.main = 0.8, font.main = 1)
+  grid(nx = NA, ny = NULL, col = "grey85", lty = 1)
+  for (i in which(has)) {
+    lines(years, nd[[i]], type = "o", pch = 16, col = col_of(i), lwd = 1.5)
+    k <- slugify(SEVERITY$name[i])
+    if (!is.null(pre_ndvi[[k]])) abline(h = pre_ndvi[[k]], col = col_of(i), lty = 3)
+  }
+  lines(years, ctrl, type = "o", pch = 15, lty = 2, col = "#0072B2", lwd = 1.5)
+  abline(h = pre_ndvi_ctrl, col = "#0072B2", lty = 3)
+  axis(1, years, las = 2); mtext("Summer (Dec-Mar, labelled by the year it ends)", 1, line = 3.5, cex = 0.7)
+  legend("bottomright", c(SEVERITY$name[has], "Unburnt land nearby"),
+         col = c(vapply(which(has), col_of, ""), "#0072B2"), lwd = 1.5, pch = c(rep(16, sum(has)), 15),
+         lty = c(rep(1, sum(has)), 2), cex = 0.7, bg = "white")
+  yy <- function(y) sprintf("%d-%s", y - 1, substr(y, 3, 4))
+  span <- if (length(years) == 1) paste("summer", yy(years)) else
+    sprintf("summers %s to %s", yy(years[1]), yy(max(years)))
+  mtext(sprintf("%s: recovery, %s", title_site, span), outer = TRUE, side = 3, cex = 0.8)
+  mtext(wrap(caption, 140), outer = TRUE, side = 1, line = 0.8, cex = 0.55)
+  dev.off()
+}
+
+# ---------------------------------------------------------------------------------------------
 # Analysis of one fire
 # ---------------------------------------------------------------------------------------------
 
@@ -508,11 +691,13 @@ analyse_fire <- function(key, fire_id, region = "", max_dates = 4, refresh = FAL
     s1 <- imm
     nxt <- end + 1
     first <- as.integer(format(nxt, "%Y")) + (format(nxt, "%m") == "12")
+    sev_name <- "just after the fire (initial assessment)"
     cat("  no full summer since the fire was out: severity from the images just after it\n")
   } else {
     w <- summer_window(first)
     s1 <- composite(site_dir, sprintf("summer%d", first), bbox_ll, w[1], w[2], grid, max_dates,
                     refresh = refresh)
+    sev_name <- sprintf("summer %d-%s", first - 1, substr(first, 3, 4))
   }
   if (is.null(pre$comp) || is.null(s1$comp)) {
     stop("Not enough clear imagery before the fire or in the first summer after it")
@@ -616,9 +801,32 @@ analyse_fire <- function(key, fire_id, region = "", max_dates = 4, refresh = FAL
   }
   stats$latest_summer <- max(as.integer(names(summers)))
 
+  # --- figures (ximage) -------------------------------------------------------------------------
+  ndvi_pre <- ndvi(base$comp)
+  pre_ndvi <- list()
+  for (i in seq_len(nrow(SEVERITY))) {
+    sel <- inside & cls == i - 1L
+    if (sum(sel, na.rm = TRUE) >= 50) pre_ndvi[[slugify(SEVERITY$name[i])]] <- nanmedian(ndvi_pre[which(sel)])
+  }
+  pre_ndvi_ctrl <- nanmedian(ndvi_pre[control])
+  yy <- function(y) sprintf("%d-%s", y - 1, substr(y, 3, 4))
+  panels <- list(list(title = "Before the fire", comp = pre$comp, meta = pre$meta, grid = grid))
+  if (!is.null(imm$comp)) panels[[length(panels) + 1]] <-
+    list(title = "Just after the fire", comp = imm$comp, meta = imm$meta, grid = grid)
+  if (!initial) panels[[length(panels) + 1]] <-
+    list(title = sprintf("First summer after (%s)", yy(first)), comp = s1$comp, meta = s1$meta, grid = grid)
+  if (last != first && !is.null(summers[[as.character(last)]])) {
+    sl <- summers[[as.character(last)]]
+    panels[[length(panels) + 1]] <- list(title = sprintf("Latest summer (%s)", yy(last)),
+                                         comp = sl$comp, meta = sl$meta, grid = sl$grid)
+  }
+  draw_figures(out_dir, rec, region, end, geom, grid, panels, initial, first, last, dnbr, cls,
+               offset, base_name, sev_name, s1$meta, stats, rows, pre_ndvi, pre_ndvi_ctrl, pre$comp)
+
   write_rows(file.path(out_dir, "summary.csv"), list(stats))
   write_rows(file.path(out_dir, "recovery.csv"), rows)
-  cat(sprintf("  wrote %s: summary.csv, recovery.csv\n", sub(paste0(ROOT, "/"), "", out_dir, fixed = TRUE)))
+  cat(sprintf("  wrote %s: before_after.png, dnbr_severity.png, recovery.png, summary.csv, recovery.csv\n",
+              sub(paste0(ROOT, "/"), "", out_dir, fixed = TRUE)))
   invisible(stats)
 }
 
