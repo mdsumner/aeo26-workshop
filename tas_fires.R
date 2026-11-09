@@ -15,6 +15,7 @@
 #   Rscript tas_fires.R --site glenlusk
 #   Rscript tas_fires.R --site glenlusk --compare   # then compare with the Python outputs
 #   Rscript tas_fires.R --compare-only --site glenlusk
+#   Rscript tas_fires.R --group fern-tree --compare      # every site in a group of sites.csv
 #
 # Packages: gdalraster, jsonlite, curl, ximage (figures); matrixStats if installed (much faster
 # medians) and ragg if installed (PNG output).
@@ -65,29 +66,12 @@ SEVERITY <- data.frame(name = c("Unburnt", "Low", "Moderate-low", "Moderate-high
                        lo = c(-Inf, 0.10, 0.27, 0.44, 0.66),
                        hi = c(0.10, 0.27, 0.44, 0.66, Inf))
 
-SITES <- list(
-  "lake-mackenzie" = list(fire_id = 8075, region = paste(
-    "Central Plateau, Tasmanian Wilderness World Heritage Area: alpine and subalpine",
-    "vegetation, including fire-sensitive pencil pine")),
-  "riveaux-road" = list(fire_id = 10137, region = paste(
-    "Southern forests west of Geeveston and the Huon Valley: tall wet eucalypt forest",
-    "next to Southwest National Park")),
-  "gell-river" = list(fire_id = 10105, region =
-    "Southwest wilderness (World Heritage Area): buttongrass moorland, scrub and forest"),
-  "great-pine-tier" = list(fire_id = 10148, region =
-    "Central Plateau near Miena: subalpine woodland, grassland and heath"),
-  "mangana-road" = list(fire_id = 10768, region =
-    "North-east, Fingal Valley: dry eucalypt forest and farmland"),
-  "mount-donaldson" = list(fire_id = 14017, region = paste(
-    "West coast near Corinna and the Pieman River (takayna/Tarkine): buttongrass,",
-    "scrub and rainforest")),
-  "glenlusk" = list(fire_id = 14725, region =
-    "Glenlusk, north-west of Hobart near Molesworth: bushland at the urban edge"),
-  "proctors-road" = list(fire_id = 9082, region =
-    "Hobart's southern hills, about 3.5 km from Fern Tree: bushland at the urban edge"),
-  "margate-plain" = list(fire_id = 14005, region =
-    "Hills west of Margate, south of Hobart: bushland and forest")
-)
+# Built-in sites, shared with tas_fires.py: key, fire_id, groups ("tasmania;fern-tree"), region
+SITES <- local({
+  d <- utils::read.csv(file.path(ROOT, "sites.csv"), stringsAsFactors = FALSE)
+  setNames(lapply(seq_len(nrow(d)), function(i)
+    list(fire_id = d$fire_id[i], groups = strsplit(d$groups[i], ";")[[1]], region = d$region[i])), d$key)
+})
 
 # ---------------------------------------------------------------------------------------------
 # Small pure functions (the same as in tas_fires.py)
@@ -884,6 +868,9 @@ compare_with_python <- function(key) {
 
 main <- function(args = commandArgs(TRUE)) {
   sites <- args[which(args == "--site") + 1]
+  for (grp in args[which(args == "--group") + 1]) {
+    sites <- union(sites, names(Filter(function(s) grp %in% s$groups, SITES)))
+  }
   if (!length(sites) || "--list" %in% args) {
     cat("Built-in sites:", paste(names(SITES), collapse = ", "), "\n")
     return(invisible(0))

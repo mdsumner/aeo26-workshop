@@ -50,33 +50,43 @@ vertical-align:-1px}
 .figlinks{margin-top:auto;font-size:.9rem;display:flex;gap:12px;flex-wrap:wrap}
 ul{padding-left:20px;max-width:72ch}
 li{margin-bottom:6px}
+.tabs>input{position:absolute;opacity:0;pointer-events:none}
+.tablist{display:flex;gap:4px;margin-top:28px;border-bottom:1px solid var(--line)}
+.tablist label{padding:10px 18px;border:1px solid transparent;border-radius:10px 10px 0 0;
+margin-bottom:-1px;cursor:pointer;font-weight:600;color:var(--muted)}
+.tabs>input:focus-visible~.tablist label{outline:2px solid var(--accent)}
+.panel{display:none}
+h3.sub{font-size:1.1rem;margin:28px 0 10px}
 footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);
 padding-top:16px}
-</style>
+#tab-tasmania:checked~.tablist label[for=tab-tasmania]{background:var(--card);border-color:var(--line);border-bottom-color:var(--card);color:var(--ink)}#tab-tasmania:checked~#panel-tasmania{display:block}#tab-fern-tree:checked~.tablist label[for=tab-fern-tree]{background:var(--card);border-color:var(--line);border-bottom-color:var(--card);color:var(--ink)}#tab-fern-tree:checked~#panel-fern-tree{display:block}</style>
 </head>
 <body>
 <main>
 <h1>Tasmanian bushfires from Sentinel-2</h1>
-<p class="lede">Where 9 recent Tasmanian bushfires burnt, how severely, and how fast the
+<p class="lede">Where 25 Tasmanian bushfires burnt, how severely, and how fast the
 vegetation is recovering, measured from free Sentinel-2 satellite images and checked against the
 State's official fire boundaries.</p>
 <div class="links">
-  <a href="sites_map.html">Interactive map</a>
-  <a href="overview.png">Overview figure</a>
+  <a href="sites_map.html">Interactive map (all fires)</a>
   <a href="summary_all.csv">All numbers (CSV)</a>
 </div>
-
+<div class="tabs">
+<input type="radio" name="tab" id="tab-tasmania" checked>
+<input type="radio" name="tab" id="tab-fern-tree">
+<div class="tablist" role="tablist"><label for="tab-tasmania" role="tab">Major fires (9)</label><label for="tab-fern-tree" role="tab">Near Fern Tree (19)</label></div>
+<section class="panel" id="panel-tasmania">
+<h2>Recent Tasmanian bushfires: large and significant fires across the state</h2>
 <figure>
-  <a href="overview.png"><img src="overview.png" alt="Overview: a map of the fires studied, the burn severity mix of each fire, and recovery of high-severity areas by years since the fire"></a>
-  <figcaption>Left: the fires studied. Middle: severity mix inside each official boundary.
+  <a href="overview.png"><img src="overview.png" alt="Overview of the major fires: a map of the fires, the burn severity mix of each fire, and recovery of high-severity areas by years since the fire"></a>
+  <figcaption>Left: the fires. Middle: severity mix inside each official boundary.
   Right: how fast high-severity (solid) and moderate-high (dashed) areas regain their pre-fire
   burn ratio, relative to unburnt land nearby.</figcaption>
 </figure>
-
-<h2>The fires, most recent first</h2>
+<h3 class="sub">The fires, most recent first</h3>
 <div class="legend"><span><i style="background:var(--sev-un)"></i>Unburnt</span><span><i style="background:var(--sev-low)"></i>Low</span><span><i style="background:var(--sev-ml)"></i>Moderate-low</span><span><i style="background:var(--sev-mh)"></i>Moderate-high</span><span><i style="background:var(--sev-hi)"></i>High</span></div>
 <div class="grid">
-<article class="card" id="glenlusk">
+<article class="card">
   <a href="glenlusk/dnbr_severity.png"><img loading="lazy" src="glenlusk/dnbr_severity.png"
      alt="Burn severity map of the Molesworth Road fire"></a>
   <div class="body">
@@ -99,7 +109,7 @@ State's official fire boundaries.</p>
     </div>
   </div>
 </article>
-<article class="card" id="mount-donaldson">
+<article class="card">
   <a href="mount-donaldson/dnbr_severity.png"><img loading="lazy" src="mount-donaldson/dnbr_severity.png"
      alt="Burn severity map of the Mount Donaldson fire"></a>
   <div class="body">
@@ -122,7 +132,7 @@ State's official fire boundaries.</p>
     </div>
   </div>
 </article>
-<article class="card" id="margate-plain">
+<article class="card">
   <a href="margate-plain/dnbr_severity.png"><img loading="lazy" src="margate-plain/dnbr_severity.png"
      alt="Burn severity map of the Margate Plain fire"></a>
   <div class="body">
@@ -145,7 +155,7 @@ State's official fire boundaries.</p>
     </div>
   </div>
 </article>
-<article class="card" id="mangana-road">
+<article class="card">
   <a href="mangana-road/dnbr_severity.png"><img loading="lazy" src="mangana-road/dnbr_severity.png"
      alt="Burn severity map of the Mangana Road fire"></a>
   <div class="body">
@@ -168,7 +178,7 @@ State's official fire boundaries.</p>
     </div>
   </div>
 </article>
-<article class="card" id="great-pine-tier">
+<article class="card">
   <a href="great-pine-tier/dnbr_severity.png"><img loading="lazy" src="great-pine-tier/dnbr_severity.png"
      alt="Burn severity map of the Great Pine Tier fire"></a>
   <div class="body">
@@ -191,7 +201,7 @@ State's official fire boundaries.</p>
     </div>
   </div>
 </article>
-<article class="card" id="riveaux-road">
+<article class="card">
   <a href="riveaux-road/dnbr_severity.png"><img loading="lazy" src="riveaux-road/dnbr_severity.png"
      alt="Burn severity map of the Riveaux Road fire"></a>
   <div class="body">
@@ -214,7 +224,7 @@ State's official fire boundaries.</p>
     </div>
   </div>
 </article>
-<article class="card" id="gell-river">
+<article class="card">
   <a href="gell-river/dnbr_severity.png"><img loading="lazy" src="gell-river/dnbr_severity.png"
      alt="Burn severity map of the Gell River fire"></a>
   <div class="body">
@@ -237,7 +247,7 @@ State's official fire boundaries.</p>
     </div>
   </div>
 </article>
-<article class="card" id="proctors-road">
+<article class="card">
   <a href="proctors-road/dnbr_severity.png"><img loading="lazy" src="proctors-road/dnbr_severity.png"
      alt="Burn severity map of the Proctors Road fire"></a>
   <div class="body">
@@ -260,7 +270,7 @@ State's official fire boundaries.</p>
     </div>
   </div>
 </article>
-<article class="card" id="lake-mackenzie">
+<article class="card">
   <a href="lake-mackenzie/dnbr_severity.png"><img loading="lazy" src="lake-mackenzie/dnbr_severity.png"
      alt="Burn severity map of the Lake Mackenzie Road fire"></a>
   <div class="body">
@@ -283,6 +293,458 @@ State's official fire boundaries.</p>
     </div>
   </div>
 </article>
+</div>
+</section>
+<section class="panel" id="panel-fern-tree">
+<h2>Bushfires near Fern Tree: smaller fires within about 20 km of Fern Tree, on kunanyi/Mount Wellington</h2>
+<figure>
+  <a href="overview_fern_tree.png"><img src="overview_fern_tree.png" alt="Overview of the near fern tree: a map of the fires, the burn severity mix of each fire, and recovery of high-severity areas by years since the fire"></a>
+  <figcaption>Left: the fires. Middle: severity mix inside each official boundary.
+  Right: how fast high-severity (solid) and moderate-high (dashed) areas regain their pre-fire
+  burn ratio, relative to unburnt land nearby.</figcaption>
+</figure>
+<h3 class="sub">The fires, most recent first</h3>
+<div class="legend"><span><i style="background:var(--sev-un)"></i>Unburnt</span><span><i style="background:var(--sev-low)"></i>Low</span><span><i style="background:var(--sev-ml)"></i>Moderate-low</span><span><i style="background:var(--sev-mh)"></i>Moderate-high</span><span><i style="background:var(--sev-hi)"></i>High</span></div>
+<div class="grid">
+<article class="card">
+  <a href="glen-dhu-road-2026/dnbr_severity.png"><img loading="lazy" src="glen-dhu-road-2026/dnbr_severity.png"
+     alt="Burn severity map of the Glen Dhu Road fire"></a>
+  <div class="body">
+    <h3>Glen Dhu Road fire, 2026</h3>
+    <p class="when">Ignited 21 Feb 2026, declared out 22 Feb 2026 (undetermined)</p>
+    <p class="region">About 18 km north-west of Fern Tree</p>
+    <div class="stats">
+      <div><b>6 ha</b><span>official area</span></div>
+      <div><b>96%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>33%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>too soon to measure recovery</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:4.3%;background:var(--sev-un)" title="Unburnt: 4.3%"></i><i style="width:25.0%;background:var(--sev-low)" title="Low: 25.0%"></i><i style="width:37.9%;background:var(--sev-ml)" title="Moderate-low: 37.9%"></i><i style="width:32.9%;background:var(--sev-mh)" title="Moderate-high: 32.9%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">Initial assessment from images just after the fire: no full summer has passed yet, so seasonal drying adds some false low severity.</p><p class="note">Very small fire: 5.6 ha is only about 140 pixels of 20 m, so the severity and recovery numbers are indicative only.</p><p class="note">8% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="glen-dhu-road-2026/before_after.png">Before and after</a>
+      <a href="glen-dhu-road-2026/dnbr_severity.png">Severity</a>
+      <a href="glen-dhu-road-2026/recovery.png">Recovery</a>
+      <a href="glen-dhu-road-2026/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="glenlusk/dnbr_severity.png"><img loading="lazy" src="glenlusk/dnbr_severity.png"
+     alt="Burn severity map of the Molesworth Road fire"></a>
+  <div class="body">
+    <h3>Molesworth Road fire, 2025</h3>
+    <p class="when">Ignited 04 Dec 2025, declared out 14 Dec 2025 (accidental)</p>
+    <p class="region">Glenlusk, north-west of Hobart near Molesworth: bushland at the urban edge</p>
+    <div class="stats">
+      <div><b>36 ha</b><span>official area</span></div>
+      <div><b>80%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>7%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>too soon to measure recovery</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:20.1%;background:var(--sev-un)" title="Unburnt: 20.1%"></i><i style="width:49.9%;background:var(--sev-low)" title="Low: 49.9%"></i><i style="width:22.6%;background:var(--sev-ml)" title="Moderate-low: 22.6%"></i><i style="width:7.2%;background:var(--sev-mh)" title="Moderate-high: 7.2%"></i><i style="width:0.2%;background:var(--sev-hi)" title="High: 0.2%"></i></div>
+    <p class="note">Initial assessment from images just after the fire: no full summer has passed yet, so seasonal drying adds some false low severity.</p><p class="note">Small fire: near the limit of 20 m pixels.</p>
+    <div class="figlinks">
+      <a href="glenlusk/before_after.png">Before and after</a>
+      <a href="glenlusk/dnbr_severity.png">Severity</a>
+      <a href="glenlusk/recovery.png">Recovery</a>
+      <a href="glenlusk/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="margate-plain/dnbr_severity.png"><img loading="lazy" src="margate-plain/dnbr_severity.png"
+     alt="Burn severity map of the Margate Plain fire"></a>
+  <div class="body">
+    <h3>Margate Plain fire, 2025</h3>
+    <p class="when">Ignited 28 Jan 2025, declared out 25 Feb 2025 (accidental)</p>
+    <p class="region">Hills west of Margate, south of Hobart: bushland and forest</p>
+    <div class="stats">
+      <div><b>484 ha</b><span>official area</span></div>
+      <div><b>96%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>55%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>only one summer since the fire so far</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:4.5%;background:var(--sev-un)" title="Unburnt: 4.5%"></i><i style="width:13.1%;background:var(--sev-low)" title="Low: 13.1%"></i><i style="width:27.6%;background:var(--sev-ml)" title="Moderate-low: 27.6%"></i><i style="width:31.1%;background:var(--sev-mh)" title="Moderate-high: 31.1%"></i><i style="width:23.6%;background:var(--sev-hi)" title="High: 23.6%"></i></div>
+    <p class="note">Small fire: near the limit of 20 m pixels.</p>
+    <div class="figlinks">
+      <a href="margate-plain/before_after.png">Before and after</a>
+      <a href="margate-plain/dnbr_severity.png">Severity</a>
+      <a href="margate-plain/recovery.png">Recovery</a>
+      <a href="margate-plain/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="snowy-view-heights-2024/dnbr_severity.png"><img loading="lazy" src="snowy-view-heights-2024/dnbr_severity.png"
+     alt="Burn severity map of the Snowy View Heights fire"></a>
+  <div class="body">
+    <h3>Snowy View Heights fire, 2024</h3>
+    <p class="when">Ignited 29 Oct 2024, declared out 21 Nov 2024 (accidental)</p>
+    <p class="region">About 18 km west of Fern Tree</p>
+    <div class="stats">
+      <div><b>54 ha</b><span>official area</span></div>
+      <div><b>72%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>0%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:27.5%;background:var(--sev-un)" title="Unburnt: 27.5%"></i><i style="width:57.9%;background:var(--sev-low)" title="Low: 57.9%"></i><i style="width:14.5%;background:var(--sev-ml)" title="Moderate-low: 14.5%"></i><i style="width:0.1%;background:var(--sev-mh)" title="Moderate-high: 0.1%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">Small fire: near the limit of 20 m pixels.</p>
+    <div class="figlinks">
+      <a href="snowy-view-heights-2024/before_after.png">Before and after</a>
+      <a href="snowy-view-heights-2024/dnbr_severity.png">Severity</a>
+      <a href="snowy-view-heights-2024/recovery.png">Recovery</a>
+      <a href="snowy-view-heights-2024/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="mount-hull-road-2024/dnbr_severity.png"><img loading="lazy" src="mount-hull-road-2024/dnbr_severity.png"
+     alt="Burn severity map of the Mount Hull Road fire"></a>
+  <div class="body">
+    <h3>Mount Hull Road fire, 2024</h3>
+    <p class="when">Ignited 11 Oct 2024, declared out 16 Oct 2024 (accidental)</p>
+    <p class="region">About 10 km north of Fern Tree</p>
+    <div class="stats">
+      <div><b>2 ha</b><span>official area</span></div>
+      <div><b>98%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>11%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:2.2%;background:var(--sev-un)" title="Unburnt: 2.2%"></i><i style="width:32.6%;background:var(--sev-low)" title="Low: 32.6%"></i><i style="width:54.3%;background:var(--sev-ml)" title="Moderate-low: 54.3%"></i><i style="width:10.9%;background:var(--sev-mh)" title="Moderate-high: 10.9%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">Very small fire: 2.0 ha is only about 50 pixels of 20 m, so the severity and recovery numbers are indicative only.</p>
+    <div class="figlinks">
+      <a href="mount-hull-road-2024/before_after.png">Before and after</a>
+      <a href="mount-hull-road-2024/dnbr_severity.png">Severity</a>
+      <a href="mount-hull-road-2024/recovery.png">Recovery</a>
+      <a href="mount-hull-road-2024/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="channel-highway-2024/dnbr_severity.png"><img loading="lazy" src="channel-highway-2024/dnbr_severity.png"
+     alt="Burn severity map of the Channel Highway fire"></a>
+  <div class="body">
+    <h3>Channel Highway fire, 2024</h3>
+    <p class="when">Ignited 17 Feb 2024, declared out 18 Feb 2024 (accidental)</p>
+    <p class="region">About 8 km south-east of Fern Tree</p>
+    <div class="stats">
+      <div><b>2 ha</b><span>official area</span></div>
+      <div><b>5%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>0%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:94.6%;background:var(--sev-un)" title="Unburnt: 94.6%"></i><i style="width:5.4%;background:var(--sev-low)" title="Low: 5.4%"></i><i style="width:0.0%;background:var(--sev-ml)" title="Moderate-low: 0.0%"></i><i style="width:0.0%;background:var(--sev-mh)" title="Moderate-high: 0.0%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">No Sentinel-2 summer before this fire: the baseline is the spring images just before it.</p><p class="note">Very small fire: 2.4 ha is only about 60 pixels of 20 m, so the severity and recovery numbers are indicative only.</p>
+    <div class="figlinks">
+      <a href="channel-highway-2024/before_after.png">Before and after</a>
+      <a href="channel-highway-2024/dnbr_severity.png">Severity</a>
+      <a href="channel-highway-2024/recovery.png">Recovery</a>
+      <a href="channel-highway-2024/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="downhams-road-2023-oct/dnbr_severity.png"><img loading="lazy" src="downhams-road-2023-oct/dnbr_severity.png"
+     alt="Burn severity map of the Downhams Road fire"></a>
+  <div class="body">
+    <h3>Downhams Road fire, 2023</h3>
+    <p class="when">Ignited 12 Oct 2023, declared out 17 Oct 2023 (undetermined)</p>
+    <p class="region">About 15 km north-east of Fern Tree</p>
+    <div class="stats">
+      <div><b>7 ha</b><span>official area</span></div>
+      <div><b>78%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>0%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:21.6%;background:var(--sev-un)" title="Unburnt: 21.6%"></i><i style="width:59.3%;background:var(--sev-low)" title="Low: 59.3%"></i><i style="width:19.1%;background:var(--sev-ml)" title="Moderate-low: 19.1%"></i><i style="width:0.0%;background:var(--sev-mh)" title="Moderate-high: 0.0%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">Very small fire: 6.8 ha is only about 170 pixels of 20 m, so the severity and recovery numbers are indicative only.</p><p class="note">9% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="downhams-road-2023-oct/before_after.png">Before and after</a>
+      <a href="downhams-road-2023-oct/dnbr_severity.png">Severity</a>
+      <a href="downhams-road-2023-oct/recovery.png">Recovery</a>
+      <a href="downhams-road-2023-oct/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="downhams-road-2023-may/dnbr_severity.png"><img loading="lazy" src="downhams-road-2023-may/dnbr_severity.png"
+     alt="Burn severity map of the Downhams Road fire"></a>
+  <div class="body">
+    <h3>Downhams Road fire, 2023</h3>
+    <p class="when">Ignited 15 May 2023, declared out 23 May 2023 (accidental)</p>
+    <p class="region">About 14 km north-east of Fern Tree</p>
+    <div class="stats">
+      <div><b>9 ha</b><span>official area</span></div>
+      <div><b>73%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>0%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:27.2%;background:var(--sev-un)" title="Unburnt: 27.2%"></i><i style="width:54.4%;background:var(--sev-low)" title="Low: 54.4%"></i><i style="width:18.4%;background:var(--sev-ml)" title="Moderate-low: 18.4%"></i><i style="width:0.0%;background:var(--sev-mh)" title="Moderate-high: 0.0%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">Very small fire: 9.3 ha is only about 232 pixels of 20 m, so the severity and recovery numbers are indicative only.</p><p class="note">8% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="downhams-road-2023-may/before_after.png">Before and after</a>
+      <a href="downhams-road-2023-may/dnbr_severity.png">Severity</a>
+      <a href="downhams-road-2023-may/recovery.png">Recovery</a>
+      <a href="downhams-road-2023-may/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="wyre-forest-road-2021/dnbr_severity.png"><img loading="lazy" src="wyre-forest-road-2021/dnbr_severity.png"
+     alt="Burn severity map of the Wyre Forest Road, Molesworth fire"></a>
+  <div class="body">
+    <h3>Wyre Forest Road, Molesworth fire, 2021</h3>
+    <p class="when">Ignited 06 Mar 2021, declared out 26 Mar 2021 (undetermined)</p>
+    <p class="region">About 14 km north-west of Fern Tree</p>
+    <div class="stats">
+      <div><b>17 ha</b><span>official area</span></div>
+      <div><b>10%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>0%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:90.5%;background:var(--sev-un)" title="Unburnt: 90.5%"></i><i style="width:9.5%;background:var(--sev-low)" title="Low: 9.5%"></i><i style="width:0.0%;background:var(--sev-ml)" title="Moderate-low: 0.0%"></i><i style="width:0.0%;background:var(--sev-mh)" title="Moderate-high: 0.0%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">Small fire: near the limit of 20 m pixels.</p>
+    <div class="figlinks">
+      <a href="wyre-forest-road-2021/before_after.png">Before and after</a>
+      <a href="wyre-forest-road-2021/dnbr_severity.png">Severity</a>
+      <a href="wyre-forest-road-2021/recovery.png">Recovery</a>
+      <a href="wyre-forest-road-2021/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="mount-hull-road-2020/dnbr_severity.png"><img loading="lazy" src="mount-hull-road-2020/dnbr_severity.png"
+     alt="Burn severity map of the Mount Hull Road fire"></a>
+  <div class="body">
+    <h3>Mount Hull Road fire, 2020</h3>
+    <p class="when">Ignited 21 Nov 2020, declared out 27 Nov 2020 (undetermined)</p>
+    <p class="region">About 9 km north-west of Fern Tree</p>
+    <div class="stats">
+      <div><b>10 ha</b><span>official area</span></div>
+      <div><b>81%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>22%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:18.7%;background:var(--sev-un)" title="Unburnt: 18.7%"></i><i style="width:33.5%;background:var(--sev-low)" title="Low: 33.5%"></i><i style="width:26.3%;background:var(--sev-ml)" title="Moderate-low: 26.3%"></i><i style="width:15.9%;background:var(--sev-mh)" title="Moderate-high: 15.9%"></i><i style="width:5.6%;background:var(--sev-hi)" title="High: 5.6%"></i></div>
+    <p class="note">Very small fire: 9.9 ha is only about 248 pixels of 20 m, so the severity and recovery numbers are indicative only.</p>
+    <div class="figlinks">
+      <a href="mount-hull-road-2020/before_after.png">Before and after</a>
+      <a href="mount-hull-road-2020/dnbr_severity.png">Severity</a>
+      <a href="mount-hull-road-2020/recovery.png">Recovery</a>
+      <a href="mount-hull-road-2020/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="slatterys-road-2019/dnbr_severity.png"><img loading="lazy" src="slatterys-road-2019/dnbr_severity.png"
+     alt="Burn severity map of the Slatterys Road Electrona fire"></a>
+  <div class="body">
+    <h3>Slatterys Road Electrona fire, 2019</h3>
+    <p class="when">Ignited 29 Oct 2019, declared out 06 Nov 2019 (accidental)</p>
+    <p class="region">About 14 km south of Fern Tree</p>
+    <div class="stats">
+      <div><b>6 ha</b><span>official area</span></div>
+      <div><b>95%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>24%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:5.2%;background:var(--sev-un)" title="Unburnt: 5.2%"></i><i style="width:21.9%;background:var(--sev-low)" title="Low: 21.9%"></i><i style="width:48.4%;background:var(--sev-ml)" title="Moderate-low: 48.4%"></i><i style="width:24.5%;background:var(--sev-mh)" title="Moderate-high: 24.5%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">Very small fire: 6.2 ha is only about 155 pixels of 20 m, so the severity and recovery numbers are indicative only.</p><p class="note">8% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="slatterys-road-2019/before_after.png">Before and after</a>
+      <a href="slatterys-road-2019/dnbr_severity.png">Severity</a>
+      <a href="slatterys-road-2019/recovery.png">Recovery</a>
+      <a href="slatterys-road-2019/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="brogo-way-2019/dnbr_severity.png"><img loading="lazy" src="brogo-way-2019/dnbr_severity.png"
+     alt="Burn severity map of the Brogo Way fire"></a>
+  <div class="body">
+    <h3>Brogo Way fire, 2019</h3>
+    <p class="when">Ignited 28 Jan 2019, declared out 28 Jan 2019 (undetermined)</p>
+    <p class="region">About 16 km east of Fern Tree</p>
+    <div class="stats">
+      <div><b>6 ha</b><span>official area</span></div>
+      <div><b>56%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>6%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:44.1%;background:var(--sev-un)" title="Unburnt: 44.1%"></i><i style="width:37.1%;background:var(--sev-low)" title="Low: 37.1%"></i><i style="width:12.6%;background:var(--sev-ml)" title="Moderate-low: 12.6%"></i><i style="width:6.3%;background:var(--sev-mh)" title="Moderate-high: 6.3%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">Very small fire: 5.8 ha is only about 145 pixels of 20 m, so the severity and recovery numbers are indicative only.</p><p class="note">11% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="brogo-way-2019/before_after.png">Before and after</a>
+      <a href="brogo-way-2019/dnbr_severity.png">Severity</a>
+      <a href="brogo-way-2019/recovery.png">Recovery</a>
+      <a href="brogo-way-2019/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="richmond-road-2019/dnbr_severity.png"><img loading="lazy" src="richmond-road-2019/dnbr_severity.png"
+     alt="Burn severity map of the Richmond Road fire"></a>
+  <div class="body">
+    <h3>Richmond Road fire, 2019</h3>
+    <p class="when">Ignited 02 Jan 2019, declared out 05 Jan 2019 (accidental)</p>
+    <p class="region">About 20 km north-east of Fern Tree</p>
+    <div class="stats">
+      <div><b>15 ha</b><span>official area</span></div>
+      <div><b>73%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>0%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:27.0%;background:var(--sev-un)" title="Unburnt: 27.0%"></i><i style="width:72.2%;background:var(--sev-low)" title="Low: 72.2%"></i><i style="width:0.8%;background:var(--sev-ml)" title="Moderate-low: 0.8%"></i><i style="width:0.0%;background:var(--sev-mh)" title="Moderate-high: 0.0%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">Small fire: near the limit of 20 m pixels.</p><p class="note">12% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="richmond-road-2019/before_after.png">Before and after</a>
+      <a href="richmond-road-2019/dnbr_severity.png">Severity</a>
+      <a href="richmond-road-2019/recovery.png">Recovery</a>
+      <a href="richmond-road-2019/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="holmfield-avenue-2017/dnbr_severity.png"><img loading="lazy" src="holmfield-avenue-2017/dnbr_severity.png"
+     alt="Burn severity map of the Holmfield Avenue fire"></a>
+  <div class="body">
+    <h3>Holmfield Avenue fire, 2017</h3>
+    <p class="when">Ignited 20 Nov 2017, declared out 22 Nov 2017 (deliberate)</p>
+    <p class="region">About 15 km east of Fern Tree</p>
+    <div class="stats">
+      <div><b>13 ha</b><span>official area</span></div>
+      <div><b>94%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>7%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:5.9%;background:var(--sev-un)" title="Unburnt: 5.9%"></i><i style="width:44.6%;background:var(--sev-low)" title="Low: 44.6%"></i><i style="width:42.1%;background:var(--sev-ml)" title="Moderate-low: 42.1%"></i><i style="width:7.4%;background:var(--sev-mh)" title="Moderate-high: 7.4%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">Small fire: near the limit of 20 m pixels.</p><p class="note">11% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="holmfield-avenue-2017/before_after.png">Before and after</a>
+      <a href="holmfield-avenue-2017/dnbr_severity.png">Severity</a>
+      <a href="holmfield-avenue-2017/recovery.png">Recovery</a>
+      <a href="holmfield-avenue-2017/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="peter-murrell-2017/dnbr_severity.png"><img loading="lazy" src="peter-murrell-2017/dnbr_severity.png"
+     alt="Burn severity map of the Peter Murrell NR, Blackmans Bay fire"></a>
+  <div class="body">
+    <h3>Peter Murrell NR, Blackmans Bay fire, 2017</h3>
+    <p class="when">Ignited 18 Nov 2017, declared out 27 Nov 2017 (deliberate)</p>
+    <p class="region">About 9 km south of Fern Tree</p>
+    <div class="stats">
+      <div><b>5 ha</b><span>official area</span></div>
+      <div><b>9%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>0%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:91.3%;background:var(--sev-un)" title="Unburnt: 91.3%"></i><i style="width:8.7%;background:var(--sev-low)" title="Low: 8.7%"></i><i style="width:0.0%;background:var(--sev-ml)" title="Moderate-low: 0.0%"></i><i style="width:0.0%;background:var(--sev-mh)" title="Moderate-high: 0.0%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">Very small fire: 4.9 ha is only about 122 pixels of 20 m, so the severity and recovery numbers are indicative only.</p><p class="note">23% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="peter-murrell-2017/before_after.png">Before and after</a>
+      <a href="peter-murrell-2017/dnbr_severity.png">Severity</a>
+      <a href="peter-murrell-2017/recovery.png">Recovery</a>
+      <a href="peter-murrell-2017/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="magnolia-road-2017/dnbr_severity.png"><img loading="lazy" src="magnolia-road-2017/dnbr_severity.png"
+     alt="Burn severity map of the Magnolia Road fire"></a>
+  <div class="body">
+    <h3>Magnolia Road fire, 2017</h3>
+    <p class="when">Ignited 29 Oct 2017, declared out 06 Nov 2017 (deliberate)</p>
+    <p class="region">About 16 km north-east of Fern Tree</p>
+    <div class="stats">
+      <div><b>7 ha</b><span>official area</span></div>
+      <div><b>92%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>1%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:7.7%;background:var(--sev-un)" title="Unburnt: 7.7%"></i><i style="width:60.4%;background:var(--sev-low)" title="Low: 60.4%"></i><i style="width:31.4%;background:var(--sev-ml)" title="Moderate-low: 31.4%"></i><i style="width:0.6%;background:var(--sev-mh)" title="Moderate-high: 0.6%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">Very small fire: 6.9 ha is only about 172 pixels of 20 m, so the severity and recovery numbers are indicative only.</p><p class="note">9% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="magnolia-road-2017/before_after.png">Before and after</a>
+      <a href="magnolia-road-2017/dnbr_severity.png">Severity</a>
+      <a href="magnolia-road-2017/recovery.png">Recovery</a>
+      <a href="magnolia-road-2017/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="proctors-road/dnbr_severity.png"><img loading="lazy" src="proctors-road/dnbr_severity.png"
+     alt="Burn severity map of the Proctors Road fire"></a>
+  <div class="body">
+    <h3>Proctors Road fire, 2017</h3>
+    <p class="when">Ignited 15 Oct 2017, declared out 31 Oct 2017 (accidental)</p>
+    <p class="region">Hobart&#x27;s southern hills, about 3.5 km from Fern Tree: bushland at the urban edge</p>
+    <div class="stats">
+      <div><b>226 ha</b><span>official area</span></div>
+      <div><b>54%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>2%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:46.4%;background:var(--sev-un)" title="Unburnt: 46.4%"></i><i style="width:39.2%;background:var(--sev-low)" title="Low: 39.2%"></i><i style="width:12.8%;background:var(--sev-ml)" title="Moderate-low: 12.8%"></i><i style="width:1.6%;background:var(--sev-mh)" title="Moderate-high: 1.6%"></i><i style="width:0.1%;background:var(--sev-hi)" title="High: 0.1%"></i></div>
+    <p class="note">Small fire: near the limit of 20 m pixels.</p><p class="note">13% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="proctors-road/before_after.png">Before and after</a>
+      <a href="proctors-road/dnbr_severity.png">Severity</a>
+      <a href="proctors-road/recovery.png">Recovery</a>
+      <a href="proctors-road/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="tianna-road-2017/dnbr_severity.png"><img loading="lazy" src="tianna-road-2017/dnbr_severity.png"
+     alt="Burn severity map of the Tianna Road fire"></a>
+  <div class="body">
+    <h3>Tianna Road fire, 2017</h3>
+    <p class="when">Ignited 15 Feb 2017, declared out 21 Feb 2017 (deliberate)</p>
+    <p class="region">About 11 km north-east of Fern Tree</p>
+    <div class="stats">
+      <div><b>22 ha</b><span>official area</span></div>
+      <div><b>87%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>6%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:12.8%;background:var(--sev-un)" title="Unburnt: 12.8%"></i><i style="width:46.3%;background:var(--sev-low)" title="Low: 46.3%"></i><i style="width:34.6%;background:var(--sev-ml)" title="Moderate-low: 34.6%"></i><i style="width:6.3%;background:var(--sev-mh)" title="Moderate-high: 6.3%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">Small fire: near the limit of 20 m pixels.</p><p class="note">9% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="tianna-road-2017/before_after.png">Before and after</a>
+      <a href="tianna-road-2017/dnbr_severity.png">Severity</a>
+      <a href="tianna-road-2017/recovery.png">Recovery</a>
+      <a href="tianna-road-2017/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="turn-creek-road-2016/dnbr_severity.png"><img loading="lazy" src="turn-creek-road-2016/dnbr_severity.png"
+     alt="Burn severity map of the Turn Creek Road fire"></a>
+  <div class="body">
+    <h3>Turn Creek Road fire, 2016</h3>
+    <p class="when">Ignited 27 Jan 2016, declared out 01 Feb 2016 (undetermined)</p>
+    <p class="region">About 14 km west of Fern Tree</p>
+    <div class="stats">
+      <div><b>7 ha</b><span>official area</span></div>
+      <div><b>78%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>0%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:22.2%;background:var(--sev-un)" title="Unburnt: 22.2%"></i><i style="width:77.8%;background:var(--sev-low)" title="Low: 77.8%"></i><i style="width:0.0%;background:var(--sev-ml)" title="Moderate-low: 0.0%"></i><i style="width:0.0%;background:var(--sev-mh)" title="Moderate-high: 0.0%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+    <p class="note">No Sentinel-2 summer before this fire: the baseline is the spring images just before it.</p><p class="note">Very small fire: 7.2 ha is only about 180 pixels of 20 m, so the severity and recovery numbers are indicative only.</p><p class="note">19% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="turn-creek-road-2016/before_after.png">Before and after</a>
+      <a href="turn-creek-road-2016/dnbr_severity.png">Severity</a>
+      <a href="turn-creek-road-2016/recovery.png">Recovery</a>
+      <a href="turn-creek-road-2016/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+</div>
+</section>
 </div>
 
 <h2>How to read this</h2>
