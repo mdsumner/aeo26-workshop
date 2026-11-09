@@ -126,6 +126,19 @@ SITES = {
     "margate-plain": dict(
         fire_id=14005,
         region="Hills west of Margate, south of Hobart: bushland and forest"),
+    # Next list (from --candidates triage)
+    "nelsons-tier": dict(
+        fire_id=14676,
+        region="About 40 km north-east of Hobart: the largest fire near Hobart in 2025-26"),
+    "labillardiere-peninsula": dict(
+        fire_id=14670,
+        region="Labillardiere Peninsula, South Bruny National Park, Bruny Island"),
+    "pelham-road": dict(
+        fire_id=10766,
+        region="About 40 km north of Hobart near Pelham: lightning-caused, summer 2019-20"),
+    "thunder-and-lightning-bay": dict(
+        fire_id=8465,
+        region="Flinders Island, Bass Strait"),
 }
 
 ATTRIBUTION = ("Sentinel-2: Digital Earth Australia ARD (Geoscience Australia, CC BY 4.0; contains "
@@ -425,13 +438,20 @@ def _warp(url: str, grid: Grid) -> np.ndarray:
     raise RuntimeError("unreachable")
 
 
-def read_date(items: list[dict], grid: Grid) -> tuple[dict, float]:
-    """Mosaic one date's tiles: clear (fmask) reflectance per band, and the clear fraction."""
+def read_date(items: list[dict], grid: Grid) -> tuple[dict, float, np.ndarray, np.ndarray]:
+    """Mosaic one date's tiles. Returns clear (fmask) reflectance per band, the clear fraction of
+    what fmask saw as not water, and two masks: seen-not-water (clear, cloud, shadow, snow) and
+    water. Across dates, a pixel ever labelled water is treated as sea, so a coastal study area is
+    not penalised for its sea."""
     out = {b: np.full((grid.height, grid.width), np.nan, "float32") for b in BANDS}
     filled = np.zeros((grid.height, grid.width), bool)
+    land = np.zeros((grid.height, grid.width), bool)
+    water = np.zeros((grid.height, grid.width), bool)
     for it in items:
         try:
             fm = _warp(_href(it, FMASK), grid)
+            land |= (fm >= 1) & (fm <= 4)
+            water |= fm == 5
             ok = (fm == FMASK_CLEAR) & ~filled
             if not ok.any():
                 continue
@@ -445,7 +465,7 @@ def read_date(items: list[dict], grid: Grid) -> tuple[dict, float]:
         for b in BANDS:
             out[b][ok] = refl[b][ok]
         filled |= ok
-    return out, float(filled.mean())
+    return out, float(filled.sum() / max(land.sum(), 1)), land, water
 
 
 def _write_composite(path: Path, comp: dict, grid: Grid, meta: dict) -> None:
@@ -476,7 +496,10 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
     if path.exists() and not refresh:
         comp, meta = _read_composite(path)
         # accept if well covered, or if the last build already tried every candidate date
-        if meta.get("valid_fraction", 0) >= min_cover - 0.05 or meta.get("searched_all"):
+        # (composites built before coverage was measured over land lack "land_fraction": a
+        # patchy one of those is rebuilt once, as the sea may be what made it look patchy)
+        if meta.get("valid_fraction", 0) >= min_cover - 0.05 or (
+                meta.get("searched_all") and meta.get("coverage_basis") == "land-v2"):
             log(f"  {label}: cached, dates {', '.join(meta['dates'])}")
             return comp, meta
         log(f"  {label}: cached composite covers only {meta.get('valid_fraction')}: rebuilding")
@@ -491,19 +514,27 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
         # Least-cloudy dates first, but keep going until the study area is covered: dates from
         # one satellite pass can all cover the same part of a site that spans two passes.
         cover = np.zeros((grid.height, grid.width), bool)
+        seen = np.zeros((grid.height, grid.width), bool)
+        water_any = np.zeros((grid.height, grid.width), bool)
+        land_eff = lambda: (seen & ~water_any) | cover
+        covered = lambda: float(cover.sum() / max(land_eff().sum(), 1))
         limit = min(len(candidates), 3 * max_dates)
-        while pos < limit and (len(used) < max_dates or cover.mean() < min_cover):
+        while pos < limit and (len(used) < max_dates or covered() < min_cover):
             batch = candidates[pos:pos + 3]
             pos += len(batch)
-            for (d, its, cc), (arrs, frac) in zip(batch, ex.map(lambda g: read_date(g[1], grid), batch)):
-                log(f"    {d}: tile cloud {cc:4.0f}%, clear over study area {frac:5.1%}")
+            for (d, its, cc), (arrs, frac, land, water) in zip(
+                    batch, ex.map(lambda g: read_date(g[1], grid), batch)):
+                seen |= land
+                water_any |= water
+                log(f"    {d}: tile cloud {cc:4.0f}%, clear over the land {frac:5.1%}")
                 if frac >= min_clear:
                     used.append(d)
                     fracs.append(round(frac, 3))
                     cover |= np.isfinite(arrs["nir"])
                     for b in BANDS:
                         stacks[b].append(arrs[b])
-        log(f"    {len(used)} dates used; study area covered {cover.mean():.1%}")
+        log(f"    {len(used)} dates used; land covered {covered():.1%} "
+            f"(land is {land_eff().mean():.0%} of the study area)")
     meta = dict(label=label, window=[start.isoformat(), end.isoformat()], dates=sorted(used),
                 clear_fraction=dict(zip(used, fracs)), res_m=grid.res,
                 collections=DEA_COLLECTIONS, n_dates_found=len(groups), searched_all=True)
@@ -514,7 +545,10 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
         warnings.simplefilter("ignore", RuntimeWarning)
         comp = {b: np.nanmedian(np.stack(stacks[b]), axis=0).astype("float32") for b in BANDS}
     comp["n_clear"] = np.isfinite(np.stack(stacks["nir"])).sum(axis=0).astype("float32")
-    meta["valid_fraction"] = round(float(np.isfinite(comp["nir"]).mean()), 3)
+    land_mask = land_eff()
+    meta["valid_fraction"] = round(float(np.isfinite(comp["nir"])[land_mask].mean()), 3)
+    meta["land_fraction"] = round(float(land_mask.mean()), 3)
+    meta["coverage_basis"] = "land-v2"
     _write_composite(path, comp, grid, meta)
     return comp, meta
 
@@ -642,10 +676,14 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
         base, base_m = composite(site_dir, f"presummer{py}", bbox_ll, s, e, grid, max_dates,
                                  refresh=refresh)
     if base is None or base_m.get("valid_fraction", 0) < 0.8:
+        why = ("no earlier Sentinel-2 summer" if base is None and not base_m else
+               f"summer {py - 1}-{str(py)[2:]} too cloudy")
         base, base_m = pre, pre_m
-        base_name = f"just before the fire ({pre_m['dates'][0][:4]}; no earlier summer available)"
+        base_name = f"just before the fire ({pre_m['dates'][0][:4]}; {why})"
     else:
         base_name = f"summer {py - 1}-{str(py)[2:]}"
+    if pre is None:
+        raise SystemExit("No clear images in the year before the fire")
     s, e = immediate_window(end)
     imm, imm_m = composite(site_dir, "immediate", bbox_ll, s, e, grid, max_dates, refresh=refresh)
     first = first_summer_after(end)
@@ -948,13 +986,22 @@ def overview() -> None:
         raise SystemExit("No finished sites yet: run --site first")
     summaries.sort(key=lambda r: r["ignition"])
     _write_csv(OUTPUTS / "summary_all.csv", summaries)
-    colours = {r["site"]: SITE_COLOURS[i % len(SITE_COLOURS)] for i, r in enumerate(summaries)}
+    # Colour = fire year (viridis, trimmed before the pale yellow end): meaningful, colour-blind
+    # safe, and it scales to any number of fires.
+    from matplotlib import colormaps
+    from matplotlib.colors import Normalize, to_hex
+    years = [int(r["ignition"][:4]) for r in summaries]
+    year_norm = Normalize(min(years), max(max(years), min(years) + 1))
+    year_cmap = colormaps["viridis"].resampled(256)
+    year_colour = lambda y: to_hex(year_cmap(0.88 * year_norm(y)))
+    colours = {r["site"]: year_colour(int(r["ignition"][:4])) for r in summaries}
 
     fig = plt.figure(figsize=(15, 6.2), constrained_layout=True)
     gs = fig.add_gridspec(1, 3, width_ratios=[1.0, 1.15, 1.15])
     ax = fig.add_subplot(gs[0])
     small: list[dict] = []
-    label_offset = {"riveaux-road": (-70, -22), "gell-river": (-62, -6)}
+    label_offset = {"riveaux-road": (-70, -22), "gell-river": (-62, -6),
+                    "lake-mackenzie": (-100, -34)}
     for g in _coastline():
         for ring in _rings(to_albers(g)):
             x, y = ring.xy
@@ -972,6 +1019,8 @@ def overview() -> None:
             continue
         ax.annotate(f"{r['fire_name']}\n{r['ignition'][:4]}", (c.x, c.y), fontsize=7,
                     xytext=label_offset.get(r["site"], (6, 4)), textcoords="offset points",
+                    arrowprops=(dict(arrowstyle="-", color="#636363", lw=0.6)
+                                if r["site"] in label_offset else None),
                     bbox=dict(boxstyle="round,pad=0.2", fc="white", ec=colours[r["site"]], alpha=0.85))
     if small:
         cx = np.mean([to_albers(shape(json.loads((OUTPUTS / r["site"] / "boundary.geojson")
@@ -1005,22 +1054,39 @@ def overview() -> None:
     ax.legend(fontsize=7, ncol=3, loc="lower center", bbox_to_anchor=(0.5, -0.32))
 
     ax = fig.add_subplot(gs[2])
+    ends = []
     for r in summaries:
         rec = _read_csv(OUTPUTS / r["site"] / "recovery.csv")
-        for k, ls in ((slugify("High"), "-"), (slugify("Moderate-high"), "--")):
-            pts = [(int(x["years_since"]), float(x[f"deficit_{k}"])) for x in rec
-                   if x.get(f"deficit_{k}") not in ("", None)]
-            if pts:
-                xs, ys = zip(*pts)
-                ax.plot(xs, ys, ls, marker="o", ms=3, color=colours[r["site"]],
-                        label=f"{r['fire_name']} ({r['ignition'][:4]})" if ls == "-" else None)
+        k = slugify("High")
+        pts = [(int(x["years_since"]), float(x[f"deficit_{k}"])) for x in rec
+               if x.get(f"deficit_{k}") not in ("", None)]
+        if pts:
+            xs, ys = zip(*pts)
+            ax.plot(xs, ys, "-", marker="o", ms=3, color=colours[r["site"]])
+            ends.append([xs[-1], ys[-1], r["fire_name"], colours[r["site"]]])
+    # direct labels at line ends, nudged apart vertically where they would overlap
+    ends.sort(key=lambda e: (e[0], e[1]))
+    for i in range(1, len(ends)):
+        if ends[i][0] == ends[i - 1][0] and ends[i][1] - ends[i - 1][1] < 0.03:
+            ends[i][1] = ends[i - 1][1] + 0.03
+    for x, y, name, c in ends:
+        ax.annotate(name, (x, y), xytext=(4, 0), textcoords="offset points", fontsize=6.5,
+                    color="#333333", va="center")
+    ax.set_xlim(right=ax.get_xlim()[1] + 2.2)
     ax.axhline(0, color="black", lw=0.8)
     ax.set_xlabel("Summers since the fire (years)")
     ax.set_ylabel("NBR deficit vs before the fire (unitless)")
-    ax.set_title("Recovery of high (solid) and moderate-high (dashed) severity areas\n"
-                 "relative to unburnt land; 0 = back to pre-fire burn ratio", fontsize=9)
+    ax.set_title("Recovery of high-severity areas, relative to unburnt land\n"
+                 "0 = back to the pre-fire burn ratio; colour = fire year", fontsize=9)
     ax.grid(alpha=0.3)
-    ax.legend(fontsize=7)
+    sm = plt.cm.ScalarMappable(norm=Normalize(0, 1), cmap=year_cmap)
+    cb = fig.colorbar(sm, ax=ax, shrink=0.6, pad=0.01)
+    yrs = sorted(set(years))
+    cb.set_ticks([0.88 * year_norm(y) for y in yrs])
+    cb.set_ticklabels([str(y) for y in yrs])
+    cb.ax.tick_params(labelsize=7)
+    cb.set_label("Fire year (ignition)", fontsize=8)
+    cb.ax.set_ylim(0, 0.88)
     fig.suptitle("Recent Tasmanian bushfires from Sentinel-2: where they burnt, how severely, and "
                  "how fast the vegetation is recovering", fontsize=11)
     fig.text(0.5, -0.02, "Each fire: median Sentinel-2 composites before the fire and each summer "
@@ -1124,9 +1190,11 @@ def _landing_page(summaries: list[dict]) -> None:
         if initial:
             notes.append("Initial assessment from images just after the fire: no full summer has "
                          "passed yet, so seasonal drying adds some false low severity.")
-        if "no earlier summer" in str(r.get("baseline", "")):
-            notes.append("No Sentinel-2 summer before this fire: the baseline is the spring "
-                         "images just before it.")
+        base_txt = str(r.get("baseline", ""))
+        if base_txt.startswith("just before the fire"):
+            why = base_txt.split("; ", 1)[-1].rstrip(")") if "; " in base_txt else ""
+            notes.append(f"Baseline is the images just before the fire ({why}), not the summer "
+                         "before, so seasonal change may add some false low severity.")
         if float(r["official_area_ha"]) < 1000:
             notes.append("Small fire: near the limit of 20 m pixels.")
         false_pct = 100 * float(r["burnt_outside_ha"]) / max(float(r["control_ha"]), 1)
@@ -1264,6 +1332,66 @@ def _folium_map(summaries: list[dict], colours: dict) -> None:
 # Command line
 # ----------------------------------------------------------------------------------------------
 
+FERN_TREE = (147.263, -42.923)   # lon, lat: distance reference for --candidates
+
+
+def region_of(lon: float, lat: float) -> str:
+    """Rough Tasmanian region from a fire's centre (for triage only)."""
+    if lat > -40.6 or lon < 144.3:
+        return "Bass Strait islands"
+    if lat > -41.6 and lon < 146.3:
+        return "North-west"
+    if lat > -41.75 and lon >= 147.3:
+        return "North-east"
+    if lon >= 147.6:
+        return "East"
+    if -42.35 < lat < -41.55 and 146.0 < lon < 147.0:
+        return "Central Plateau"
+    if lat < -42.3 and lon < 146.7:
+        return "South-west"
+    if lat < -42.55 and lon >= 146.7:
+        return "South / Hobart"
+    if lon < 145.9:
+        return "West coast"
+    return "Midlands / Derwent"
+
+
+def candidates(min_ha: float = 100, today: dt.date | None = None) -> list[dict]:
+    """Every Fire History bushfire since 2015-16 >= min_ha not yet a site, tagged for triage."""
+    today = today or dt.date.today()
+    last = latest_summer(today)
+    done = {v["fire_id"] for v in SITES.values()}
+    rows, offset = [], 0
+    while True:
+        d = _get_json(FIRE_LAYER + "/query", dict(
+            where=f"FIRE_TYPE='Bushfire' AND IGN_SEASON>={MIN_SEASON} AND FIRE_AR_HA>={min_ha}",
+            outFields=FIRE_FIELDS, returnGeometry="true", outSR=4326, maxAllowableOffset=0.01,
+            orderByFields="FIRE_AR_HA DESC", resultOffset=offset, resultRecordCount=1000, f="json"))
+        for f in d.get("features", []):
+            r = _fire_record(f["attributes"])
+            if r["fire_id"] in done or r["ignition"] is None:
+                continue
+            pts = [p for ring in f["geometry"]["rings"] for p in ring]
+            lon = (min(p[0] for p in pts) + max(p[0] for p in pts)) / 2
+            lat = (min(p[1] for p in pts) + max(p[1] for p in pts)) / 2
+            end = r["end"] or r["ignition"]
+            km = math.hypot((lon - FERN_TREE[0]) * 81.6, (lat - FERN_TREE[1]) * 111.0)
+            summer_base = summer_window(pre_summer_year(r["ignition"]))[0] >= dt.date(2015, 7, 1)
+            first = first_summer_after(end)
+            rows.append(dict(
+                fire_id=r["fire_id"], name=r["name"], area_ha=round(r["area_ha"]),
+                ignition=r["ignition"].isoformat(), declared_out=end.isoformat(), cause=r["cause"],
+                region=region_of(lon, lat), km_from_fern_tree=round(km), lon=round(lon, 4),
+                lat=round(lat, 4), baseline="summer before" if summer_base else "pre-fire (fallback)",
+                assessment="extended" if first <= last else "initial",
+                recovery_summers=max(0, last - first + 1) if first <= last else 0,
+                pixels_20m=round(r["area_ha"] / 0.04)))
+        if not d.get("exceededTransferLimit"):
+            break
+        offset += 1000
+    return sorted(rows, key=lambda x: -x["area_ha"])
+
+
 def _print_fires(fires: list[dict]) -> None:
     for f in fires:
         print(f"  --fire-id {f['fire_id']:<6} {f['name'][:34]:34} {f['area_ha']:>9,.0f} ha  "
@@ -1282,6 +1410,9 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--lat", type=float, help="latitude (with --lon)")
     p.add_argument("--all", action="store_true", help="every built-in site, then the overview")
     p.add_argument("--overview", action="store_true", help="overview figure and interactive map")
+    p.add_argument("--candidates", action="store_true",
+                   help="triage every other bushfire since 2015-16 (>= 100 ha) to "
+                        "outputs/tasmania/candidates.csv")
     p.add_argument("--max-dates", type=int, default=4, help="images per composite (default 4)")
     p.add_argument("--refresh", action="store_true", help="ignore cached composites")
     a = p.parse_args(argv)
@@ -1292,6 +1423,12 @@ def main(argv: list[str] | None = None) -> int:
             rec, _ = get_fire(v["fire_id"])
             print(f"  {k:16} {rec['name']:22} ignited {rec['ignition']}  {rec['area_ha']:>8,.0f} ha"
                   f"  {v['region']}")
+        return 0
+    if a.candidates:
+        rows = candidates()
+        OUTPUTS.mkdir(parents=True, exist_ok=True)
+        _write_csv(OUTPUTS / "candidates.csv", rows)
+        print(f"{len(rows)} candidate fires written to outputs/tasmania/candidates.csv")
         return 0
     if a.search is not None:
         _print_fires(search_fires(a.search))

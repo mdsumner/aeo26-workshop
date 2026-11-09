@@ -85,3 +85,10 @@ def test_group_by_date_least_cloudy_first():
     g = tf.group_by_date(items)
     assert [x[0] for x in g] == ["2019-01-11", "2019-01-01"]
     assert len(g[1][1]) == 2 and g[1][2] == pytest.approx(40)
+
+
+def test_region_of():
+    assert tf.region_of(148.0, -40.0) == "Bass Strait islands"     # Flinders Island
+    assert tf.region_of(147.3, -42.9) == "South / Hobart"
+    assert tf.region_of(146.6, -41.9) == "Central Plateau"
+    assert tf.region_of(146.2, -42.6) == "South-west"
