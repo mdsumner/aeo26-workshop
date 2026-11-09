@@ -493,7 +493,10 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
     if path.exists() and not refresh:
         comp, meta = _read_composite(path)
         # accept if well covered, or if the last build already tried every candidate date
-        if meta.get("valid_fraction", 0) >= min_cover - 0.05 or meta.get("searched_all"):
+        # (composites built before coverage was measured over land lack "land_fraction": a
+        # patchy one of those is rebuilt once, as the sea may be what made it look patchy)
+        if meta.get("valid_fraction", 0) >= min_cover - 0.05 or (
+                meta.get("searched_all") and "land_fraction" in meta):
             log(f"  {label}: cached, dates {', '.join(meta['dates'])}")
             return comp, meta
         log(f"  {label}: cached composite covers only {meta.get('valid_fraction')}: rebuilding")
