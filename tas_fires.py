@@ -116,6 +116,10 @@ SITES = _load_sites(ROOT / "sites.csv")
 ATTRIBUTION = ("Sentinel-2: Digital Earth Australia ARD (Geoscience Australia, CC BY 4.0; contains "
                "Copernicus data). Fire boundaries: Fire History, theLIST (c) State of Tasmania, "
                "CC BY 3.0 AU.")
+DISCLAIMER = ("Not an official resource: exploratory results made with an AI coding agent at a "
+              "workshop, not checked by a bushfire or fire-ecology expert.")
+DISCLAIMER_OFFICIAL = "For official fire information, see the Tasmania Fire Service."
+TFS_URL = "https://www.fire.tas.gov.au/"
 
 
 # ----------------------------------------------------------------------------------------------
@@ -1207,7 +1211,7 @@ def _overview_figure(summaries: list[dict], group: str) -> None:
     fig.suptitle(f"{GROUPS[group][1]} from Sentinel-2 ({len(summaries)} fires, "
                  f"{summaries[0]['ignition'][:4]}-{summaries[-1]['ignition'][:4]}): where they burnt, "
                  "how severely, and how fast the vegetation is recovering", fontsize=11)
-    fig.text(0.5, -0.02, "Each fire: median Sentinel-2 composites before the fire and each summer "
+    fig.text(0.5, -0.02, DISCLAIMER + " Each fire: median Sentinel-2 composites before the fire and each summer "
              "after; dNBR corrected with unburnt land nearby. " + ATTRIBUTION +
              " Coastline: Natural Earth (public domain).", ha="center", va="top", fontsize=7,
              wrap=True)
@@ -1262,6 +1266,9 @@ border-radius:6px;pointer-events:none}
 .legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.8rem;color:var(--muted)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;
 vertical-align:-1px}
+.warn{border:1px solid var(--sev-ml);border-left:6px solid var(--sev-ml);border-radius:8px;
+background:var(--card);padding:10px 14px;margin:14px 0;max-width:72ch;font-size:.95rem}
+.warn p{margin:0}
 .note{font-size:.82rem;color:var(--muted);border-left:3px solid var(--sev-ml);padding-left:8px}
 .figlinks{margin-top:auto;font-size:.9rem;display:flex;gap:12px;flex-wrap:wrap}
 ul{padding-left:20px;max-width:72ch}
@@ -1450,6 +1457,7 @@ def _landing_page(groups: dict[str, list[dict]]) -> None:
   burn ratio, relative to unburnt land nearby.</figcaption>
 </figure>
 <h3 class="sub">The fires, most recent first</h3>
+<p class="note">{_esc(DISCLAIMER)}</p>
 <div class="legend">{legend}</div>
 <p class="when">Inset on each map: all of Tasmania at the same scale; the orange lines cross at
 the fire, and the fire's official boundary is filled in the maps' boundary blue when it is big
@@ -1477,6 +1485,10 @@ enough to see (about {inset_min_km:.0f} km across or more).</p>
 <p class="lede">Where {len(summaries)} Tasmanian bushfires burnt, how severely, and how fast the
 vegetation is recovering, measured from free Sentinel-2 satellite images and checked against the
 State's official fire boundaries.</p>
+<div class="warn" role="note"><p><b>{_esc(DISCLAIMER.split(":")[0])}.</b>
+{_esc(DISCLAIMER.split(": ", 1)[1][0].upper() + DISCLAIMER.split(": ", 1)[1][1:])} Severity classes
+use generic thresholds and the numbers may contain errors. Don't use them for safety, planning
+or management decisions. <a href="{TFS_URL}">{_esc(DISCLAIMER_OFFICIAL[:-1])}</a>.</p></div>
 <div class="links">
   <a href="sites_map.html">Interactive map (all fires)</a>
   <a href="summary_all.csv">All numbers (CSV)</a>
@@ -1505,6 +1517,7 @@ image dates and the white (no clear data) areas in each figure.</li>
 and <a href="../../tas_fires.py">tas_fires.py</a>.</p>
 
 <footer>
+<p><b>{_esc(DISCLAIMER)}</b> <a href="{TFS_URL}">{_esc(DISCLAIMER_OFFICIAL[:-1])}</a>.</p>
 <p>Sentinel-2: Digital Earth Australia Analysis Ready Data, Geoscience Australia, CC BY 4.0
 (contains modified Copernicus Sentinel data). Fire boundaries: Fire History, theLIST, (c) State of
 Tasmania, CC BY 3.0 AU. Coastline: Natural Earth (public domain). Map tiles: (c) OpenStreetMap
@@ -1536,7 +1549,8 @@ def _folium_map(summaries: list[dict], colours: dict) -> None:
                 f"High-severity recovery to {r['latest_summer']}: {r['recovered_high_pct']}%<br>"
                 f"<a href='{site}/before_after.png' target='_blank'>before/after</a> | "
                 f"<a href='{site}/dnbr_severity.png' target='_blank'>severity</a> | "
-                f"<a href='{site}/recovery.png' target='_blank'>recovery</a>")
+                f"<a href='{site}/recovery.png' target='_blank'>recovery</a>"
+                f"<br><i style='font-size:11px'>{DISCLAIMER}</i>")
         folium.GeoJson(json.loads((OUTPUTS / site / "boundary.geojson").read_text()),
                        style_function=lambda _, c=colours[site]: dict(color=c, weight=2,
                                                                       fillOpacity=0.0),
@@ -1549,6 +1563,12 @@ def _folium_map(summaries: list[dict], colours: dict) -> None:
         "<div style='position:fixed;bottom:30px;right:10px;z-index:9999;background:white;"
         "padding:6px;font-size:12px;border:1px solid #999'><b>Burn severity (dNBR)</b>"
         f"{legend}<div style='font-size:10px;max-width:220px'>{ATTRIBUTION}</div></div>"))
+    m.get_root().html.add_child(folium.Element(
+        "<div style='position:fixed;top:10px;left:60px;right:60px;z-index:9999;max-width:640px;"
+        "margin:0 auto;background:#fff8e6;border:1px solid #e69f00;border-left:6px solid #e69f00;"
+        f"padding:6px 10px;font:13px system-ui,sans-serif'><b>{DISCLAIMER.split(':')[0]}.</b> "
+        f"{DISCLAIMER.split(': ', 1)[1].capitalize()} <a href='{TFS_URL}' target='_blank'>"
+        f"{DISCLAIMER_OFFICIAL[:-1]}</a>.</div>"))
     folium.Marker([FERN_TREE[1], FERN_TREE[0]], tooltip="Fern Tree",
                   icon=folium.Icon(color="black", icon="star")).add_to(m)
     folium.LayerControl(collapsed=True).add_to(m)

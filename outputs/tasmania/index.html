@@ -50,6 +50,9 @@ border-radius:6px;pointer-events:none}
 .legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.8rem;color:var(--muted)}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;
 vertical-align:-1px}
+.warn{border:1px solid var(--sev-ml);border-left:6px solid var(--sev-ml);border-radius:8px;
+background:var(--card);padding:10px 14px;margin:14px 0;max-width:72ch;font-size:.95rem}
+.warn p{margin:0}
 .note{font-size:.82rem;color:var(--muted);border-left:3px solid var(--sev-ml);padding-left:8px}
 .figlinks{margin-top:auto;font-size:.9rem;display:flex;gap:12px;flex-wrap:wrap}
 ul{padding-left:20px;max-width:72ch}
@@ -72,6 +75,10 @@ padding-top:16px}
 <p class="lede">Where 33 Tasmanian bushfires burnt, how severely, and how fast the
 vegetation is recovering, measured from free Sentinel-2 satellite images and checked against the
 State's official fire boundaries.</p>
+<div class="warn" role="note"><p><b>Not an official resource.</b>
+Exploratory results made with an AI coding agent at a workshop, not checked by a bushfire or fire-ecology expert. Severity classes
+use generic thresholds and the numbers may contain errors. Don't use them for safety, planning
+or management decisions. <a href="https://www.fire.tas.gov.au/">For official fire information, see the Tasmania Fire Service</a>.</p></div>
 <div class="links">
   <a href="sites_map.html">Interactive map (all fires)</a>
   <a href="summary_all.csv">All numbers (CSV)</a>
@@ -89,6 +96,7 @@ State's official fire boundaries.</p>
   burn ratio, relative to unburnt land nearby.</figcaption>
 </figure>
 <h3 class="sub">The fires, most recent first</h3>
+<p class="note">Not an official resource: exploratory results made with an AI coding agent at a workshop, not checked by a bushfire or fire-ecology expert.</p>
 <div class="legend"><span><i style="background:var(--sev-un)"></i>Unburnt</span><span><i style="background:var(--sev-low)"></i>Low</span><span><i style="background:var(--sev-ml)"></i>Moderate-low</span><span><i style="background:var(--sev-mh)"></i>Moderate-high</span><span><i style="background:var(--sev-hi)"></i>High</span></div>
 <p class="when">Inset on each map: all of Tasmania at the same scale; the orange lines cross at
 the fire, and the fire's official boundary is filled in the maps' boundary blue when it is big
@@ -496,6 +504,7 @@ enough to see (about 8 km across or more).</p>
   burn ratio, relative to unburnt land nearby.</figcaption>
 </figure>
 <h3 class="sub">The fires, most recent first</h3>
+<p class="note">Not an official resource: exploratory results made with an AI coding agent at a workshop, not checked by a bushfire or fire-ecology expert.</p>
 <div class="legend"><span><i style="background:var(--sev-un)"></i>Unburnt</span><span><i style="background:var(--sev-low)"></i>Low</span><span><i style="background:var(--sev-ml)"></i>Moderate-low</span><span><i style="background:var(--sev-mh)"></i>Moderate-high</span><span><i style="background:var(--sev-hi)"></i>High</span></div>
 <p class="when">Inset on each map: all of Tasmania at the same scale; the orange lines cross at
 the fire, and the fire's official boundary is filled in the maps' boundary blue when it is big
@@ -960,6 +969,7 @@ image dates and the white (no clear data) areas in each figure.</li>
 and <a href="../../tas_fires.py">tas_fires.py</a>.</p>
 
 <footer>
+<p><b>Not an official resource: exploratory results made with an AI coding agent at a workshop, not checked by a bushfire or fire-ecology expert.</b> <a href="https://www.fire.tas.gov.au/">For official fire information, see the Tasmania Fire Service</a>.</p>
 <p>Sentinel-2: Digital Earth Australia Analysis Ready Data, Geoscience Australia, CC BY 4.0
 (contains modified Copernicus Sentinel data). Fire boundaries: Fire History, theLIST, (c) State of
 Tasmania, CC BY 3.0 AU. Coastline: Natural Earth (public domain). Map tiles: (c) OpenStreetMap
