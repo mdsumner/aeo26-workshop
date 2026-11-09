@@ -1011,8 +1011,191 @@ def overview() -> None:
     fig.savefig(OUTPUTS / "overview.png", dpi=130, bbox_inches="tight")
     plt.close(fig)
     _folium_map(summaries, colours)
+    _landing_page(summaries)
     print(f"wrote outputs/tasmania/overview.png, sites_map.html and summary_all.csv "
           f"({len(summaries)} sites)")
+
+
+LANDING_CSS = """
+:root{--bg:#fbfaf7;--card:#ffffff;--ink:#1d1d1b;--muted:#5d5d58;--line:#e2e0da;--accent:#0072B2;
+--chip:#f1efe9;--sev-low:#fed976;--sev-ml:#fd8d3c;--sev-mh:#e31a1c;--sev-hi:#800026;--sev-un:#d9d9d9}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151514;--card:#1f1f1d;
+--ink:#ecebe6;--muted:#a8a69f;--line:#34332f;--accent:#56B4E9;--chip:#2a2926}}
+:root[data-theme="dark"]{--bg:#151514;--card:#1f1f1d;--ink:#ecebe6;--muted:#a8a69f;--line:#34332f;
+--accent:#56B4E9;--chip:#2a2926}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,
+"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:clamp(1.6rem,4vw,2.3rem);line-height:1.15;margin:0 0 8px}
+h2{font-size:1.25rem;margin:40px 0 12px}
+p{margin:0 0 12px;max-width:72ch}
+a{color:var(--accent)}
+.lede{color:var(--muted);font-size:1.05rem}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 8px}
+.links a{display:inline-block;padding:8px 14px;border:1px solid var(--line);border-radius:999px;
+background:var(--card);text-decoration:none;font-weight:600}
+figure{margin:16px 0;background:var(--card);border:1px solid var(--line);border-radius:10px;
+padding:8px}
+figure img{width:100%;height:auto;display:block;border-radius:6px}
+figcaption{font-size:.85rem;color:var(--muted);padding:8px 4px 2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+display:flex;flex-direction:column}
+.card img{width:100%;aspect-ratio:16/10;object-fit:cover;object-position:right center;
+display:block;border-bottom:1px solid var(--line);background:var(--chip)}
+.card .body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.card h3{margin:0;font-size:1.1rem}
+.when{color:var(--muted);font-size:.9rem;margin:0}
+.region{font-size:.92rem;margin:0}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:4px 0;font-size:.9rem}
+.stats div{display:flex;flex-direction:column}
+.stats b{font-size:1.15rem;font-variant-numeric:tabular-nums}
+.stats span{color:var(--muted);font-size:.8rem}
+.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--chip)}
+.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.8rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;
+vertical-align:-1px}
+.note{font-size:.82rem;color:var(--muted);border-left:3px solid var(--sev-ml);padding-left:8px}
+.figlinks{margin-top:auto;font-size:.9rem;display:flex;gap:12px;flex-wrap:wrap}
+ul{padding-left:20px;max-width:72ch}
+li{margin-bottom:6px}
+footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);
+padding-top:16px}
+"""
+
+
+def _esc(text) -> str:
+    import html
+    return html.escape(str(text), quote=True)
+
+
+def _num(v, fmt="{:,.0f}", suffix="") -> str:
+    try:
+        return fmt.format(float(v)) + suffix
+    except (TypeError, ValueError):
+        return "n/a"
+
+
+def _landing_page(summaries: list[dict]) -> None:
+    """outputs/tasmania/index.html: a static landing page for GitHub Pages (no external assets)."""
+    sev_vars = ["--sev-un", "--sev-low", "--sev-ml", "--sev-mh", "--sev-hi"]
+    cards = []
+    for r in sorted(summaries, key=lambda r: r["ignition"], reverse=True):
+        site = r["site"]
+        ign = dt.date.fromisoformat(r["ignition"])
+        out = dt.date.fromisoformat(r["declared_out"])
+        bar = "".join(
+            f'<i style="width:{float(r["pct_" + slugify(n)]):.1f}%;background:var({v})" '
+            f'title="{n}: {float(r["pct_" + slugify(n)]):.1f}%"></i>'
+            for (n, _, _), v in zip(SEVERITY, sev_vars))
+        hi = float(r["pct_high"]) + float(r["pct_moderate-high"])
+        rec = r.get("recovered_high_pct", "")
+        initial = str(r.get("severity_basis", "")).startswith("initial")
+        if initial:
+            rec_txt, rec_lab = "n/a", "too soon to measure recovery"
+        else:
+            rec_txt = _num(rec, "{:.0f}", "%")
+            rec_lab = f"high-severity recovery by summer {int(r['latest_summer']) - 1}-" \
+                      f"{str(r['latest_summer'])[2:]}"
+        notes = []
+        if initial:
+            notes.append("Initial assessment from images just after the fire: no full summer has "
+                         "passed yet, so seasonal drying adds some false low severity.")
+        if "no earlier summer" in str(r.get("baseline", "")):
+            notes.append("No Sentinel-2 summer before this fire: the baseline is the spring "
+                         "images just before it.")
+        if float(r["official_area_ha"]) < 1000:
+            notes.append("Small fire: near the limit of 20 m pixels.")
+        note_html = "".join(f'<p class="note">{_esc(n)}</p>' for n in notes)
+        cards.append(f"""
+<article class="card" id="{_esc(site)}">
+  <a href="{_esc(site)}/dnbr_severity.png"><img loading="lazy" src="{_esc(site)}/dnbr_severity.png"
+     alt="Burn severity map of the {_esc(r['fire_name'])} fire"></a>
+  <div class="body">
+    <h3>{_esc(r['fire_name'])} fire, {ign.year}</h3>
+    <p class="when">Ignited {ign:%d %b %Y}, declared out {out:%d %b %Y} ({_esc(str(r['cause']).lower())})</p>
+    <p class="region">{_esc(r['region'])}</p>
+    <div class="stats">
+      <div><b>{_num(r['official_area_ha'])} ha</b><span>official area</span></div>
+      <div><b>{_num(r['burnt_inside_pct'], '{:.0f}', '%')}</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>{hi:.0f}%</b><span>moderate-high or high severity</span></div>
+      <div><b>{rec_txt}</b><span>{_esc(rec_lab)}</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix">{bar}</div>
+    {note_html}
+    <div class="figlinks">
+      <a href="{_esc(site)}/before_after.png">Before and after</a>
+      <a href="{_esc(site)}/dnbr_severity.png">Severity</a>
+      <a href="{_esc(site)}/recovery.png">Recovery</a>
+      <a href="{_esc(site)}/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>""")
+    legend = "".join(f'<span><i style="background:var({v})"></i>{n}</span>'
+                     for (n, _, _), v in zip(SEVERITY, sev_vars))
+    page = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tasmanian Bushfires from Sentinel-2</title>
+<meta name="description" content="Where recent Tasmanian bushfires burnt, how severely, and how fast the vegetation is recovering, from Sentinel-2 satellite images.">
+<style>{LANDING_CSS}</style>
+</head>
+<body>
+<main>
+<h1>Tasmanian bushfires from Sentinel-2</h1>
+<p class="lede">Where {len(summaries)} recent Tasmanian bushfires burnt, how severely, and how fast the
+vegetation is recovering, measured from free Sentinel-2 satellite images and checked against the
+State's official fire boundaries.</p>
+<div class="links">
+  <a href="sites_map.html">Interactive map</a>
+  <a href="overview.png">Overview figure</a>
+  <a href="summary_all.csv">All numbers (CSV)</a>
+</div>
+
+<figure>
+  <a href="overview.png"><img src="overview.png" alt="Overview: a map of the fires studied, the burn severity mix of each fire, and recovery of high-severity areas by years since the fire"></a>
+  <figcaption>Left: the fires studied. Middle: severity mix inside each official boundary.
+  Right: how fast high-severity (solid) and moderate-high (dashed) areas regain their pre-fire
+  burn ratio, relative to unburnt land nearby.</figcaption>
+</figure>
+
+<h2>The fires, most recent first</h2>
+<div class="legend">{legend}</div>
+<div class="grid">{''.join(cards)}
+</div>
+
+<h2>How to read this</h2>
+<ul>
+<li><b>Burn ratio (NBR)</b> compares near-infrared light (high from healthy leaves) with
+short-wave infrared (high from bare, burnt ground). <b>dNBR</b> is the drop in NBR from the summer
+before the fire to the first summer after it: the bigger the drop, the more severe the burn.</li>
+<li>Severity classes use the generic Key &amp; Benson (2006) thresholds. They are not calibrated
+against field plots in Tasmanian vegetation, so treat them as relative.</li>
+<li><b>Recovery</b> is how much of the first-summer drop in NBR has been regained since, after
+allowing for year-to-year change in unburnt land nearby. A recovered burn ratio is not a recovered
+ecosystem: fire-sensitive communities such as pencil pine can be replaced by plants that look just
+as green from space.</li>
+<li>Thin cloud, smoke, forestry clearfelling and planned burns can also look like burns. Check the
+image dates and the white (no clear data) areas in each figure.</li>
+</ul>
+<p>Method, caveats and how to run it for any Tasmanian fire: <a href="../../TASMANIA.md">TASMANIA.md</a>
+and <a href="../../tas_fires.py">tas_fires.py</a>.</p>
+
+<footer>
+<p>Sentinel-2: Digital Earth Australia Analysis Ready Data, Geoscience Australia, CC BY 4.0
+(contains modified Copernicus Sentinel data). Fire boundaries: Fire History, theLIST, (c) State of
+Tasmania, CC BY 3.0 AU. Coastline: Natural Earth (public domain). Map tiles: (c) OpenStreetMap
+contributors. Built with Claude Code at the AEO26 workshop, Nipaluna/Hobart, November 2026.</p>
+</footer>
+</main>
+</body>
+</html>
+"""
+    (OUTPUTS / "index.html").write_text(page)
 
 
 def _folium_map(summaries: list[dict], colours: dict) -> None:
