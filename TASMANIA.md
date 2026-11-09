@@ -65,9 +65,17 @@ For each site, in `outputs/tasmania/<site>/`:
 | `summary.csv` | Areas by severity class (ha), agreement with the official boundary, and the image dates used |
 | `recovery.csv` | The numbers behind `recovery.png` |
 
-Across all sites, in `outputs/tasmania/`: `overview.png` (map, severity mix, recovery curves),
-`summary_all.csv`, and `sites_map.html`, an interactive map with the severity overlays. Open the
-HTML file from a local copy of the repo: the links inside it are relative.
+Across all sites, in `outputs/tasmania/`:
+
+| File | What it is |
+|---|---|
+| `index.html` | Landing page: one card per fire (most recent first), with links to every figure. Built for GitHub Pages, with no external files |
+| `sites_map.html` | Interactive map with the fire boundaries and severity overlays (embedded), and popups linking to the figures |
+| `overview.png` | Map of the sites, the severity mix of each fire, and recovery curves |
+| `summary_all.csv` | One row per fire |
+
+`python tas_fires.py --overview` rebuilds all four from the finished sites. The links are relative,
+so the pages work on GitHub Pages (`/outputs/tasmania/`) or from a local copy of the repo.
 
 ## Method
 

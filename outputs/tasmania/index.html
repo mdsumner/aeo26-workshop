@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tasmanian Bushfires from Sentinel-2</title>
+<meta name="description" content="Where recent Tasmanian bushfires burnt, how severely, and how fast the vegetation is recovering, from Sentinel-2 satellite images.">
+<style>
+:root{--bg:#fbfaf7;--card:#ffffff;--ink:#1d1d1b;--muted:#5d5d58;--line:#e2e0da;--accent:#0072B2;
+--chip:#f1efe9;--sev-low:#fed976;--sev-ml:#fd8d3c;--sev-mh:#e31a1c;--sev-hi:#800026;--sev-un:#d9d9d9}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151514;--card:#1f1f1d;
+--ink:#ecebe6;--muted:#a8a69f;--line:#34332f;--accent:#56B4E9;--chip:#2a2926}}
+:root[data-theme="dark"]{--bg:#151514;--card:#1f1f1d;--ink:#ecebe6;--muted:#a8a69f;--line:#34332f;
+--accent:#56B4E9;--chip:#2a2926}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,
+"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:clamp(1.6rem,4vw,2.3rem);line-height:1.15;margin:0 0 8px}
+h2{font-size:1.25rem;margin:40px 0 12px}
+p{margin:0 0 12px;max-width:72ch}
+a{color:var(--accent)}
+.lede{color:var(--muted);font-size:1.05rem}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 8px}
+.links a{display:inline-block;padding:8px 14px;border:1px solid var(--line);border-radius:999px;
+background:var(--card);text-decoration:none;font-weight:600}
+figure{margin:16px 0;background:var(--card);border:1px solid var(--line);border-radius:10px;
+padding:8px}
+figure img{width:100%;height:auto;display:block;border-radius:6px}
+figcaption{font-size:.85rem;color:var(--muted);padding:8px 4px 2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+display:flex;flex-direction:column}
+.card img{width:100%;aspect-ratio:16/10;object-fit:cover;object-position:right center;
+display:block;border-bottom:1px solid var(--line);background:var(--chip)}
+.card .body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.card h3{margin:0;font-size:1.1rem}
+.when{color:var(--muted);font-size:.9rem;margin:0}
+.region{font-size:.92rem;margin:0}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:4px 0;font-size:.9rem}
+.stats div{display:flex;flex-direction:column}
+.stats b{font-size:1.15rem;font-variant-numeric:tabular-nums}
+.stats span{color:var(--muted);font-size:.8rem}
+.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--chip)}
+.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.8rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;
+vertical-align:-1px}
+.note{font-size:.82rem;color:var(--muted);border-left:3px solid var(--sev-ml);padding-left:8px}
+.figlinks{margin-top:auto;font-size:.9rem;display:flex;gap:12px;flex-wrap:wrap}
+ul{padding-left:20px;max-width:72ch}
+li{margin-bottom:6px}
+footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);
+padding-top:16px}
+</style>
+</head>
+<body>
+<main>
+<h1>Tasmanian bushfires from Sentinel-2</h1>
+<p class="lede">Where 9 recent Tasmanian bushfires burnt, how severely, and how fast the
+vegetation is recovering, measured from free Sentinel-2 satellite images and checked against the
+State's official fire boundaries.</p>
+<div class="links">
+  <a href="sites_map.html">Interactive map</a>
+  <a href="overview.png">Overview figure</a>
+  <a href="summary_all.csv">All numbers (CSV)</a>
+</div>
+
+<figure>
+  <a href="overview.png"><img src="overview.png" alt="Overview: a map of the fires studied, the burn severity mix of each fire, and recovery of high-severity areas by years since the fire"></a>
+  <figcaption>Left: the fires studied. Middle: severity mix inside each official boundary.
+  Right: how fast high-severity (solid) and moderate-high (dashed) areas regain their pre-fire
+  burn ratio, relative to unburnt land nearby.</figcaption>
+</figure>
+
+<h2>The fires, most recent first</h2>
+<div class="legend"><span><i style="background:var(--sev-un)"></i>Unburnt</span><span><i style="background:var(--sev-low)"></i>Low</span><span><i style="background:var(--sev-ml)"></i>Moderate-low</span><span><i style="background:var(--sev-mh)"></i>Moderate-high</span><span><i style="background:var(--sev-hi)"></i>High</span></div>
+<div class="grid">
+<article class="card" id="glenlusk">
+  <a href="glenlusk/dnbr_severity.png"><img loading="lazy" src="glenlusk/dnbr_severity.png"
+     alt="Burn severity map of the Molesworth Road fire"></a>
+  <div class="body">
+    <h3>Molesworth Road fire, 2025</h3>
+    <p class="when">Ignited 04 Dec 2025, declared out 14 Dec 2025 (accidental)</p>
+    <p class="region">Glenlusk, north-west of Hobart near Molesworth: bushland at the urban edge</p>
+    <div class="stats">
+      <div><b>36 ha</b><span>official area</span></div>
+      <div><b>80%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>7%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>too soon to measure recovery</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:20.1%;background:var(--sev-un)" title="Unburnt: 20.1%"></i><i style="width:49.9%;background:var(--sev-low)" title="Low: 49.9%"></i><i style="width:22.6%;background:var(--sev-ml)" title="Moderate-low: 22.6%"></i><i style="width:7.2%;background:var(--sev-mh)" title="Moderate-high: 7.2%"></i><i style="width:0.2%;background:var(--sev-hi)" title="High: 0.2%"></i></div>
+    <p class="note">Initial assessment from images just after the fire: no full summer has passed yet, so seasonal drying adds some false low severity.</p><p class="note">Small fire: near the limit of 20 m pixels.</p>
+    <div class="figlinks">
+      <a href="glenlusk/before_after.png">Before and after</a>
+      <a href="glenlusk/dnbr_severity.png">Severity</a>
+      <a href="glenlusk/recovery.png">Recovery</a>
+      <a href="glenlusk/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card" id="mount-donaldson">
+  <a href="mount-donaldson/dnbr_severity.png"><img loading="lazy" src="mount-donaldson/dnbr_severity.png"
+     alt="Burn severity map of the Mount Donaldson fire"></a>
+  <div class="body">
+    <h3>Mount Donaldson fire, 2025</h3>
+    <p class="when">Ignited 03 Feb 2025, declared out 24 Jun 2025 (natural)</p>
+    <p class="region">West coast near Corinna and the Pieman River (takayna/Tarkine): buttongrass, scrub and rainforest</p>
+    <div class="stats">
+      <div><b>57,949 ha</b><span>official area</span></div>
+      <div><b>96%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>42%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>only one summer since the fire so far</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:3.7%;background:var(--sev-un)" title="Unburnt: 3.7%"></i><i style="width:17.0%;background:var(--sev-low)" title="Low: 17.0%"></i><i style="width:37.4%;background:var(--sev-ml)" title="Moderate-low: 37.4%"></i><i style="width:30.5%;background:var(--sev-mh)" title="Moderate-high: 30.5%"></i><i style="width:11.4%;background:var(--sev-hi)" title="High: 11.4%"></i></div>
+    
+    <div class="figlinks">
+      <a href="mount-donaldson/before_after.png">Before and after</a>
+      <a href="mount-donaldson/dnbr_severity.png">Severity</a>
+      <a href="mount-donaldson/recovery.png">Recovery</a>
+      <a href="mount-donaldson/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card" id="margate-plain">
+  <a href="margate-plain/dnbr_severity.png"><img loading="lazy" src="margate-plain/dnbr_severity.png"
+     alt="Burn severity map of the Margate Plain fire"></a>
+  <div class="body">
+    <h3>Margate Plain fire, 2025</h3>
+    <p class="when">Ignited 28 Jan 2025, declared out 25 Feb 2025 (accidental)</p>
+    <p class="region">Hills west of Margate, south of Hobart: bushland and forest</p>
+    <div class="stats">
+      <div><b>484 ha</b><span>official area</span></div>
+      <div><b>96%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>55%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>only one summer since the fire so far</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:4.5%;background:var(--sev-un)" title="Unburnt: 4.5%"></i><i style="width:13.1%;background:var(--sev-low)" title="Low: 13.1%"></i><i style="width:27.6%;background:var(--sev-ml)" title="Moderate-low: 27.6%"></i><i style="width:31.1%;background:var(--sev-mh)" title="Moderate-high: 31.1%"></i><i style="width:23.6%;background:var(--sev-hi)" title="High: 23.6%"></i></div>
+    <p class="note">Small fire: near the limit of 20 m pixels.</p>
+    <div class="figlinks">
+      <a href="margate-plain/before_after.png">Before and after</a>
+      <a href="margate-plain/dnbr_severity.png">Severity</a>
+      <a href="margate-plain/recovery.png">Recovery</a>
+      <a href="margate-plain/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card" id="mangana-road">
+  <a href="mangana-road/dnbr_severity.png"><img loading="lazy" src="mangana-road/dnbr_severity.png"
+     alt="Burn severity map of the Mangana Road fire"></a>
+  <div class="body">
+    <h3>Mangana Road fire, 2019</h3>
+    <p class="when">Ignited 30 Dec 2019, declared out 10 Mar 2020 (deliberate)</p>
+    <p class="region">North-east, Fingal Valley: dry eucalypt forest and farmland</p>
+    <div class="stats">
+      <div><b>14,760 ha</b><span>official area</span></div>
+      <div><b>81%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>21%</b><span>moderate-high or high severity</span></div>
+      <div><b>53%</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:18.9%;background:var(--sev-un)" title="Unburnt: 18.9%"></i><i style="width:38.8%;background:var(--sev-low)" title="Low: 38.8%"></i><i style="width:21.0%;background:var(--sev-ml)" title="Moderate-low: 21.0%"></i><i style="width:15.2%;background:var(--sev-mh)" title="Moderate-high: 15.2%"></i><i style="width:6.0%;background:var(--sev-hi)" title="High: 6.0%"></i></div>
+    
+    <div class="figlinks">
+      <a href="mangana-road/before_after.png">Before and after</a>
+      <a href="mangana-road/dnbr_severity.png">Severity</a>
+      <a href="mangana-road/recovery.png">Recovery</a>
+      <a href="mangana-road/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card" id="great-pine-tier">
+  <a href="great-pine-tier/dnbr_severity.png"><img loading="lazy" src="great-pine-tier/dnbr_severity.png"
+     alt="Burn severity map of the Great Pine Tier fire"></a>
+  <div class="body">
+    <h3>Great Pine Tier fire, 2019</h3>
+    <p class="when">Ignited 15 Jan 2019, declared out 12 Mar 2019 (natural)</p>
+    <p class="region">Central Plateau near Miena: subalpine woodland, grassland and heath</p>
+    <div class="stats">
+      <div><b>51,228 ha</b><span>official area</span></div>
+      <div><b>89%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>44%</b><span>moderate-high or high severity</span></div>
+      <div><b>54%</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:10.6%;background:var(--sev-un)" title="Unburnt: 10.6%"></i><i style="width:19.0%;background:var(--sev-low)" title="Low: 19.0%"></i><i style="width:26.3%;background:var(--sev-ml)" title="Moderate-low: 26.3%"></i><i style="width:38.9%;background:var(--sev-mh)" title="Moderate-high: 38.9%"></i><i style="width:5.2%;background:var(--sev-hi)" title="High: 5.2%"></i></div>
+    
+    <div class="figlinks">
+      <a href="great-pine-tier/before_after.png">Before and after</a>
+      <a href="great-pine-tier/dnbr_severity.png">Severity</a>
+      <a href="great-pine-tier/recovery.png">Recovery</a>
+      <a href="great-pine-tier/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card" id="riveaux-road">
+  <a href="riveaux-road/dnbr_severity.png"><img loading="lazy" src="riveaux-road/dnbr_severity.png"
+     alt="Burn severity map of the Riveaux Road fire"></a>
+  <div class="body">
+    <h3>Riveaux Road fire, 2019</h3>
+    <p class="when">Ignited 15 Jan 2019, declared out 24 Mar 2019 (natural)</p>
+    <p class="region">Southern forests west of Geeveston and the Huon Valley: tall wet eucalypt forest next to Southwest National Park</p>
+    <div class="stats">
+      <div><b>63,896 ha</b><span>official area</span></div>
+      <div><b>81%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>37%</b><span>moderate-high or high severity</span></div>
+      <div><b>82%</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:19.3%;background:var(--sev-un)" title="Unburnt: 19.3%"></i><i style="width:23.7%;background:var(--sev-low)" title="Low: 23.7%"></i><i style="width:20.0%;background:var(--sev-ml)" title="Moderate-low: 20.0%"></i><i style="width:23.6%;background:var(--sev-mh)" title="Moderate-high: 23.6%"></i><i style="width:13.3%;background:var(--sev-hi)" title="High: 13.3%"></i></div>
+    
+    <div class="figlinks">
+      <a href="riveaux-road/before_after.png">Before and after</a>
+      <a href="riveaux-road/dnbr_severity.png">Severity</a>
+      <a href="riveaux-road/recovery.png">Recovery</a>
+      <a href="riveaux-road/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card" id="gell-river">
+  <a href="gell-river/dnbr_severity.png"><img loading="lazy" src="gell-river/dnbr_severity.png"
+     alt="Burn severity map of the Gell River fire"></a>
+  <div class="body">
+    <h3>Gell River fire, 2018</h3>
+    <p class="when">Ignited 28 Dec 2018, declared out 06 May 2019 (natural)</p>
+    <p class="region">Southwest wilderness (World Heritage Area): buttongrass moorland, scrub and forest</p>
+    <div class="stats">
+      <div><b>35,037 ha</b><span>official area</span></div>
+      <div><b>95%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>62%</b><span>moderate-high or high severity</span></div>
+      <div><b>88%</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:5.0%;background:var(--sev-un)" title="Unburnt: 5.0%"></i><i style="width:7.2%;background:var(--sev-low)" title="Low: 7.2%"></i><i style="width:25.4%;background:var(--sev-ml)" title="Moderate-low: 25.4%"></i><i style="width:41.0%;background:var(--sev-mh)" title="Moderate-high: 41.0%"></i><i style="width:21.5%;background:var(--sev-hi)" title="High: 21.5%"></i></div>
+    
+    <div class="figlinks">
+      <a href="gell-river/before_after.png">Before and after</a>
+      <a href="gell-river/dnbr_severity.png">Severity</a>
+      <a href="gell-river/recovery.png">Recovery</a>
+      <a href="gell-river/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card" id="proctors-road">
+  <a href="proctors-road/dnbr_severity.png"><img loading="lazy" src="proctors-road/dnbr_severity.png"
+     alt="Burn severity map of the Proctors Road fire"></a>
+  <div class="body">
+    <h3>Proctors Road fire, 2017</h3>
+    <p class="when">Ignited 15 Oct 2017, declared out 31 Oct 2017 (accidental)</p>
+    <p class="region">Hobart&#x27;s southern hills, about 3.5 km from Fern Tree: bushland at the urban edge</p>
+    <div class="stats">
+      <div><b>226 ha</b><span>official area</span></div>
+      <div><b>54%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>2%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:46.4%;background:var(--sev-un)" title="Unburnt: 46.4%"></i><i style="width:39.2%;background:var(--sev-low)" title="Low: 39.2%"></i><i style="width:12.8%;background:var(--sev-ml)" title="Moderate-low: 12.8%"></i><i style="width:1.6%;background:var(--sev-mh)" title="Moderate-high: 1.6%"></i><i style="width:0.1%;background:var(--sev-hi)" title="High: 0.1%"></i></div>
+    <p class="note">Small fire: near the limit of 20 m pixels.</p><p class="note">13% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="proctors-road/before_after.png">Before and after</a>
+      <a href="proctors-road/dnbr_severity.png">Severity</a>
+      <a href="proctors-road/recovery.png">Recovery</a>
+      <a href="proctors-road/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card" id="lake-mackenzie">
+  <a href="lake-mackenzie/dnbr_severity.png"><img loading="lazy" src="lake-mackenzie/dnbr_severity.png"
+     alt="Burn severity map of the Lake Mackenzie Road fire"></a>
+  <div class="body">
+    <h3>Lake Mackenzie Road fire, 2016</h3>
+    <p class="when">Ignited 19 Jan 2016, declared out 04 May 2016 (natural)</p>
+    <p class="region">Central Plateau, Tasmanian Wilderness World Heritage Area: alpine and subalpine vegetation, including fire-sensitive pencil pine</p>
+    <div class="stats">
+      <div><b>24,711 ha</b><span>official area</span></div>
+      <div><b>79%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>34%</b><span>moderate-high or high severity</span></div>
+      <div><b>82%</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:21.3%;background:var(--sev-un)" title="Unburnt: 21.3%"></i><i style="width:23.1%;background:var(--sev-low)" title="Low: 23.1%"></i><i style="width:22.0%;background:var(--sev-ml)" title="Moderate-low: 22.0%"></i><i style="width:22.8%;background:var(--sev-mh)" title="Moderate-high: 22.8%"></i><i style="width:10.9%;background:var(--sev-hi)" title="High: 10.9%"></i></div>
+    <p class="note">No Sentinel-2 summer before this fire: the baseline is the spring images just before it.</p>
+    <div class="figlinks">
+      <a href="lake-mackenzie/before_after.png">Before and after</a>
+      <a href="lake-mackenzie/dnbr_severity.png">Severity</a>
+      <a href="lake-mackenzie/recovery.png">Recovery</a>
+      <a href="lake-mackenzie/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+</div>
+
+<h2>How to read this</h2>
+<ul>
+<li><b>Burn ratio (NBR)</b> compares near-infrared light (high from healthy leaves) with
+short-wave infrared (high from bare, burnt ground). <b>dNBR</b> is the drop in NBR from the summer
+before the fire to the first summer after it: the bigger the drop, the more severe the burn.</li>
+<li>Severity classes use the generic Key &amp; Benson (2006) thresholds. They are not calibrated
+against field plots in Tasmanian vegetation, so treat them as relative.</li>
+<li><b>Recovery</b> is how much of the first-summer drop in NBR has been regained since, after
+allowing for year-to-year change in unburnt land nearby. A recovered burn ratio is not a recovered
+ecosystem: fire-sensitive communities such as pencil pine can be replaced by plants that look just
+as green from space.</li>
+<li>Thin cloud, smoke, forestry clearfelling and planned burns can also look like burns. Check the
+image dates and the white (no clear data) areas in each figure.</li>
+</ul>
+<p>Method, caveats and how to run it for any Tasmanian fire: <a href="../../TASMANIA.md">TASMANIA.md</a>
+and <a href="../../tas_fires.py">tas_fires.py</a>.</p>
+
+<footer>
+<p>Sentinel-2: Digital Earth Australia Analysis Ready Data, Geoscience Australia, CC BY 4.0
+(contains modified Copernicus Sentinel data). Fire boundaries: Fire History, theLIST, (c) State of
+Tasmania, CC BY 3.0 AU. Coastline: Natural Earth (public domain). Map tiles: (c) OpenStreetMap
+contributors. Built with Claude Code at the AEO26 workshop, Nipaluna/Hobart, November 2026.</p>
+</footer>
+</main>
+</body>
+</html>

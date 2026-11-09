@@ -92,7 +92,7 @@ SEVERITY = [
 ]
 SEVERITY_COLOURS = ["#d9d9d9", "#fed976", "#fd8d3c", "#e31a1c", "#800026"]  # grey + YlOrRd
 SITE_COLOURS = ["#0072B2", "#E69F00", "#009E73", "#CC79A7", "#56B4E9", "#D55E00", "#000000",
-                "#F0E442"]  # Okabe-Ito
+                "#999999", "#B39C00"]  # Okabe-Ito, plus grey; yellow darkened to read on white
 
 SITES = {
     "lake-mackenzie": dict(
@@ -953,6 +953,8 @@ def overview() -> None:
     fig = plt.figure(figsize=(15, 6.2), constrained_layout=True)
     gs = fig.add_gridspec(1, 3, width_ratios=[1.0, 1.15, 1.15])
     ax = fig.add_subplot(gs[0])
+    small: list[dict] = []
+    label_offset = {"riveaux-road": (-70, -22), "gell-river": (-62, -6)}
     for g in _coastline():
         for ring in _rings(to_albers(g)):
             x, y = ring.xy
@@ -964,16 +966,32 @@ def overview() -> None:
             x, y = ring.xy
             ax.fill(x, y, color=colours[r["site"]], alpha=0.85, lw=0)
         c = g.representative_point()
+        if float(r["official_area_ha"]) < 1000:      # too small to see at state scale
+            ax.plot(c.x, c.y, "o", ms=6, mfc=colours[r["site"]], mec="black", mew=0.6)
+            small.append(r)
+            continue
         ax.annotate(f"{r['fire_name']}\n{r['ignition'][:4]}", (c.x, c.y), fontsize=7,
-                    xytext=(6, 4), textcoords="offset points",
+                    xytext=label_offset.get(r["site"], (6, 4)), textcoords="offset points",
                     bbox=dict(boxstyle="round,pad=0.2", fc="white", ec=colours[r["site"]], alpha=0.85))
+    if small:
+        cx = np.mean([to_albers(shape(json.loads((OUTPUTS / r["site"] / "boundary.geojson")
+                     .read_text())["features"][0]["geometry"])).centroid.x for r in small])
+        cy = np.mean([to_albers(shape(json.loads((OUTPUTS / r["site"] / "boundary.geojson")
+                     .read_text())["features"][0]["geometry"])).centroid.y for r in small])
+        txt = "Near Hobart (dots):\n" + "\n".join(f"{r['fire_name']} {r['ignition'][:4]}"
+                                                   for r in small)
+        ax.annotate(txt, (cx, cy), fontsize=7, xytext=(28, -46), textcoords="offset points",
+                    arrowprops=dict(arrowstyle="-", color="#636363", lw=0.7),
+                    bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="#636363", alpha=0.9))
     ax.set_aspect("equal")
     ax.set_xticks([]); ax.set_yticks([])
     ax.set_title("Fire boundaries studied (Fire History, theLIST)\nEPSG:3577", fontsize=9)
     add_map_furniture(ax, list(ax.get_xlim()) + list(ax.get_ylim()))
 
     ax = fig.add_subplot(gs[1])
-    labels = [f"{r['fire_name']} ({r['ignition'][:4]})" for r in summaries]
+    labels = [f"{r['fire_name']} ({r['ignition'][:4]})"
+              + (" *" if str(r.get("severity_basis", "")).startswith("initial") else "")
+              for r in summaries]
     left = np.zeros(len(summaries))
     for (name, _, _), col in zip(SEVERITY, SEVERITY_COLOURS):
         v = np.array([float(r[f"pct_{slugify(name)}"]) for r in summaries])
@@ -982,7 +1000,7 @@ def overview() -> None:
     ax.invert_yaxis()
     ax.set_xlim(0, 100)
     ax.set_xlabel("% of the official boundary with clear data")
-    ax.set_title("Burn severity mix, first summer after each fire\n(dNBR, Key & Benson classes)",
+    ax.set_title("Burn severity mix, first summer after each fire\n(dNBR, Key & Benson classes; * = initial assessment)",
                  fontsize=9)
     ax.legend(fontsize=7, ncol=3, loc="lower center", bbox_to_anchor=(0.5, -0.32))
 
@@ -1096,6 +1114,8 @@ def _landing_page(summaries: list[dict]) -> None:
         initial = str(r.get("severity_basis", "")).startswith("initial")
         if initial:
             rec_txt, rec_lab = "n/a", "too soon to measure recovery"
+        elif str(r["latest_summer"]) == str(r["severity_summer"]):
+            rec_txt, rec_lab = "n/a", "only one summer since the fire so far"
         else:
             rec_txt = _num(rec, "{:.0f}", "%")
             rec_lab = f"high-severity recovery by summer {int(r['latest_summer']) - 1}-" \
@@ -1212,7 +1232,8 @@ def _folium_map(summaries: list[dict], colours: dict) -> None:
         site = r["site"]
         fg = folium.FeatureGroup(name=f"{r['fire_name']} ({r['ignition'][:4]})")
         ov = json.loads((OUTPUTS / site / "severity_overlay.json").read_text())
-        folium.raster_layers.ImageOverlay(f"{site}/severity_overlay.png", bounds=ov["bounds"],
+        folium.raster_layers.ImageOverlay(str(OUTPUTS / site / "severity_overlay.png"),
+                                          bounds=ov["bounds"],
                                           opacity=0.85).add_to(fg)
         html = (f"<b>{r['fire_name']}</b> (FIRE_ID {r['fire_id']})<br>{r['region']}<br>"
                 f"Ignited {r['ignition']}, out {r['declared_out']}, cause {r['cause']}<br>"
