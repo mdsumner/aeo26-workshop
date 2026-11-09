@@ -91,68 +91,25 @@ SEVERITY = [
     ("High", 0.66, math.inf),
 ]
 SEVERITY_COLOURS = ["#d9d9d9", "#fed976", "#fd8d3c", "#e31a1c", "#800026"]  # grey + YlOrRd
-SITE_COLOURS = ["#0072B2", "#E69F00", "#009E73", "#CC79A7", "#56B4E9", "#D55E00", "#000000",
-                "#999999", "#B39C00"]  # Okabe-Ito, plus grey; yellow darkened to read on white
 
-SITES = {
-    "lake-mackenzie": dict(
-        fire_id=8075,
-        region="Central Plateau, Tasmanian Wilderness World Heritage Area: alpine and subalpine "
-               "vegetation, including fire-sensitive pencil pine"),
-    "riveaux-road": dict(
-        fire_id=10137,
-        region="Southern forests west of Geeveston and the Huon Valley: tall wet eucalypt forest "
-               "next to Southwest National Park"),
-    "gell-river": dict(
-        fire_id=10105,
-        region="Southwest wilderness (World Heritage Area): buttongrass moorland, scrub and forest"),
-    "great-pine-tier": dict(
-        fire_id=10148,
-        region="Central Plateau near Miena: subalpine woodland, grassland and heath"),
-    "mangana-road": dict(
-        fire_id=10768,
-        region="North-east, Fingal Valley: dry eucalypt forest and farmland"),
-    "mount-donaldson": dict(
-        fire_id=14017,
-        region="West coast near Corinna and the Pieman River (takayna/Tarkine): buttongrass, "
-               "scrub and rainforest"),
-    # Hobart district: small fires at the urban edge
-    "glenlusk": dict(
-        fire_id=14725,
-        region="Glenlusk, north-west of Hobart near Molesworth: bushland at the urban edge"),
-    "proctors-road": dict(
-        fire_id=9082,
-        region="Hobart's southern hills, about 3.5 km from Fern Tree: bushland at the urban edge"),
-    "margate-plain": dict(
-        fire_id=14005,
-        region="Hills west of Margate, south of Hobart: bushland and forest"),
-    # Next list (from --candidates triage)
-    "nelsons-tier": dict(
-        fire_id=14676,
-        region="About 40 km north-east of Hobart: the largest fire near Hobart in 2025-26"),
-    "labillardiere-peninsula": dict(
-        fire_id=14670,
-        region="Labillardiere Peninsula, South Bruny National Park, Bruny Island"),
-    "pelham-road": dict(
-        fire_id=10766,
-        region="About 40 km north of Hobart near Pelham: lightning-caused, summer 2019-20"),
-    "thunder-and-lightning-bay": dict(
-        fire_id=8465,
-        region="Flinders Island, Bass Strait"),
-    # East coast and north-east, summer 2025-26 (and the earlier Dolphin Sands fire)
-    "dolphin-sands-2025": dict(
-        fire_id=14730,
-        region="Dolphin Sands, near Swansea on the east coast: coastal settlement and bushland"),
-    "dolphin-sands-2023": dict(
-        fire_id=13258,
-        region="Dolphin Sands, near Swansea: the same stretch, burnt two years earlier"),
-    "mcneills-road-2026": dict(
-        fire_id=14889,
-        region="Near Swansea on the east coast, next to Dolphin Sands: autumn 2026"),
-    "tasman-highway-2025": dict(
-        fire_id=14734,
-        region="North-east Tasmania: the largest fire of December 2025"),
+
+def _load_sites(path: Path) -> dict:
+    """Built-in sites from sites.csv (shared with tas_fires.R): key -> fire_id, groups, region."""
+    with open(path, newline="") as f:
+        return {r["key"]: dict(fire_id=int(r["fire_id"]), groups=r["groups"].split(";"),
+                               region=r["region"]) for r in csv.DictReader(f)}
+
+
+# Tabs on the landing page: group key -> (tab label, heading, lede, overview figure)
+GROUPS = {
+    "tasmania": ("Major fires", "Recent Tasmanian bushfires",
+                 "large and significant fires across the state", "overview.png"),
+    "fern-tree": ("Near Fern Tree", "Bushfires near Fern Tree",
+                  "smaller fires within about 20 km of Fern Tree, on kunanyi/Mount Wellington",
+                  "overview_fern_tree.png"),
 }
+FERN_TREE = (147.262, -42.923)   # longitude, latitude
+SITES = _load_sites(ROOT / "sites.csv")
 
 ATTRIBUTION = ("Sentinel-2: Digital Earth Australia ARD (Geoscience Australia, CC BY 4.0; contains "
                "Copernicus data). Fire boundaries: Fire History, theLIST (c) State of Tasmania, "
@@ -231,13 +188,35 @@ def pre_summer_year(ignition: dt.date) -> int:
     return year
 
 
+# ----------------------------------------------------------------------------------------------
+# GDAL (osgeo.gdal / osr / ogr): all raster reading, warping, writing and coordinate transforms
+# ----------------------------------------------------------------------------------------------
+
+def _gdal():
+    from osgeo import gdal
+    gdal.UseExceptions()
+    return gdal
+
+
+def _srs(code: str):
+    """osr.SpatialReference in longitude/latitude (x/y) axis order, whatever the CRS says."""
+    from osgeo import osr
+    osr.UseExceptions()
+    s = osr.SpatialReference()
+    s.SetFromUserInput(code)
+    s.SetAxisMappingStrategy(osr.OAMS_TRADITIONAL_GIS_ORDER)
+    return s
+
+
+def _ct(src: str, dst: str):
+    from osgeo import osr
+    return osr.CoordinateTransformation(_srs(src), _srs(dst))
+
+
 def true_north_angle(x: float, y: float) -> float:
     """Angle of true north, in degrees clockwise from grid up, at EPSG:3577 point (x, y)."""
-    from pyproj import Transformer
-    to_ll = Transformer.from_crs(CRS, "EPSG:4326", always_xy=True)
-    to_xy = Transformer.from_crs("EPSG:4326", CRS, always_xy=True)
-    lon, lat = to_ll.transform(x, y)
-    x2, y2 = to_xy.transform(lon, lat + 0.05)
+    lon, lat, _ = _ct(CRS, "EPSG:4326").TransformPoint(x, y)
+    x2, y2, _ = _ct("EPSG:4326", CRS).TransformPoint(lon, lat + 0.05)
     return math.degrees(math.atan2(x2 - x, y2 - y))
 
 
@@ -255,9 +234,9 @@ class Grid:
     height: int
 
     @property
-    def transform(self):
-        from rasterio.transform import from_origin
-        return from_origin(self.x0, self.y0, self.res, self.res)
+    def geotransform(self) -> tuple[float, ...]:
+        """GDAL geotransform: (left, pixel width, 0, top, 0, -pixel height)."""
+        return (self.x0, self.res, 0.0, self.y0, 0.0, -self.res)
 
     @property
     def bounds(self) -> tuple[float, float, float, float]:
@@ -277,8 +256,7 @@ class Grid:
         return Grid(self.x0, self.y0, self.res * f, self.width // f, self.height // f)
 
     def bounds_lonlat(self) -> list[float]:
-        from rasterio.warp import transform_bounds
-        return list(transform_bounds(CRS, "EPSG:4326", *self.bounds, densify_pts=21))
+        return list(_ct(CRS, "EPSG:4326").TransformBounds(*self.bounds, 21))
 
 
 def grid_for_bounds(bounds: tuple[float, float, float, float], buffer_m: float = BUFFER_M,
@@ -434,15 +412,19 @@ def group_by_date(items: list[dict]) -> list[tuple[str, list[dict], float]]:
 
 
 def _warp(url: str, grid: Grid) -> np.ndarray:
-    import rasterio
-    from rasterio.enums import Resampling
-    from rasterio.vrt import WarpedVRT
+    """Band 1 of `url` (a path or an https URL) warped onto `grid`, nearest neighbour.
+
+    Only the bytes covering the grid are read (GDAL /vsicurl/ range requests). Areas the file
+    doesn't cover come back as the file's nodata value. Overviews are not used, so pixels are
+    always sampled from full resolution."""
+    gdal = _gdal()
+    src = "/vsicurl/" + url if url.startswith(("http://", "https://")) else url
     for i in range(4):
         try:
-            with rasterio.open(url) as src, WarpedVRT(
-                    src, crs=CRS, transform=grid.transform, width=grid.width, height=grid.height,
-                    resampling=Resampling.nearest, src_nodata=src.nodata, nodata=src.nodata) as v:
-                return v.read(1)
+            ds = gdal.Warp("", src, format="MEM", dstSRS=CRS, outputBounds=grid.bounds,
+                           width=grid.width, height=grid.height, resampleAlg="near",
+                           overviewLevel="NONE", multithread=False)
+            return ds.GetRasterBand(1).ReadAsArray()
         except Exception as exc:
             missing = "403" in str(exc) or "404" in str(exc)   # S3 answers 403 for a missing file
             if i == 3 or (missing and i == 2):
@@ -482,22 +464,31 @@ def read_date(items: list[dict], grid: Grid) -> tuple[dict, float, np.ndarray, n
 
 
 def _write_composite(path: Path, comp: dict, grid: Grid, meta: dict) -> None:
-    import rasterio
+    gdal = _gdal()
     names = list(BANDS) + ["n_clear"]
     path.parent.mkdir(parents=True, exist_ok=True)
-    with rasterio.open(path, "w", driver="GTiff", width=grid.width, height=grid.height, count=len(names),
-                       dtype="float32", crs=CRS, transform=grid.transform, nodata=np.nan,
-                       compress="deflate", predictor=3, tiled=True) as dst:
-        for i, n in enumerate(names, 1):
-            dst.write(comp[n].astype("float32"), i)
-            dst.set_band_description(i, n)
+    ds = gdal.GetDriverByName("GTiff").Create(
+        str(path), grid.width, grid.height, len(names), gdal.GDT_Float32,
+        options=["COMPRESS=DEFLATE", "PREDICTOR=3", "TILED=YES"])
+    ds.SetGeoTransform(grid.geotransform)
+    ds.SetSpatialRef(_srs(CRS))
+    for i, n in enumerate(names, 1):
+        band = ds.GetRasterBand(i)
+        band.SetNoDataValue(float("nan"))
+        band.SetDescription(n)
+        band.WriteArray(comp[n].astype("float32"))
+    ds = None   # closes and flushes the file
     path.with_suffix(".json").write_text(json.dumps(meta, indent=1))
 
 
 def _read_composite(path: Path) -> tuple[dict, dict]:
-    import rasterio
-    with rasterio.open(path) as src:
-        comp = {src.descriptions[i - 1]: src.read(i) for i in range(1, src.count + 1)}
+    gdal = _gdal()
+    ds = gdal.Open(str(path))
+    comp = {}
+    for i in range(1, ds.RasterCount + 1):
+        band = ds.GetRasterBand(i)
+        comp[band.GetDescription()] = band.ReadAsArray()
+    ds = None
     return comp, json.loads(path.with_suffix(".json").read_text())
 
 
@@ -571,20 +562,36 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
 # ----------------------------------------------------------------------------------------------
 
 def to_albers(geom):
+    """A shapely geometry from longitude/latitude (EPSG:4326) to EPSG:3577 metres."""
     import shapely
-    from pyproj import Transformer
-    t = Transformer.from_crs("EPSG:4326", CRS, always_xy=True)
-    return shapely.transform(geom, lambda x, y: t.transform(x, y), interleaved=False)
+    ct = _ct("EPSG:4326", CRS)
+
+    def f(xy: np.ndarray) -> np.ndarray:
+        if len(xy) == 0:
+            return xy
+        return np.asarray(ct.TransformPoints(np.ascontiguousarray(xy, "float64")))[:, :2]
+    return shapely.transform(geom, f)
 
 
 def rasterize(geoms: list, grid: Grid) -> np.ndarray:
-    """True inside any of the (EPSG:3577) geometries."""
-    from rasterio.features import geometry_mask
+    """True inside any of the (EPSG:3577) geometries: pixels whose centre is inside."""
+    from osgeo import ogr
+    gdal = _gdal()
     geoms = [g for g in geoms if g is not None and not g.is_empty]
     if not geoms:
         return np.zeros((grid.height, grid.width), bool)
-    return geometry_mask(geoms, out_shape=(grid.height, grid.width), transform=grid.transform,
-                         invert=True)
+    drv = ogr.GetDriverByName("MEM") or ogr.GetDriverByName("Memory")   # "MEM" from GDAL 3.11
+    vds = drv.CreateDataSource("")
+    lyr = vds.CreateLayer("geoms", srs=_srs(CRS))
+    for g in geoms:
+        feat = ogr.Feature(lyr.GetLayerDefn())
+        feat.SetGeometry(ogr.CreateGeometryFromWkb(g.wkb))
+        lyr.CreateFeature(feat)
+    rds = gdal.GetDriverByName("MEM").Create("", grid.width, grid.height, 1, gdal.GDT_Byte)
+    rds.SetGeoTransform(grid.geotransform)
+    rds.SetSpatialRef(_srs(CRS))
+    gdal.RasterizeLayer(rds, [1], lyr, burn_values=[1])
+    return rds.GetRasterBand(1).ReadAsArray().astype(bool)
 
 
 def _rings(geom):
@@ -904,6 +911,7 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
     for ax in axes:
         ax.set_xlabel("Summer (Dec-Mar, labelled by the year it ends)")
         ax.set_xticks(years)
+        ax.set_xlim(years[0] - 0.5, years[-1] + 0.5)   # both panels, even with one point plotted
         ax.tick_params(axis="x", labelrotation=45)
         ax.legend(fontsize=7)
         ax.grid(alpha=0.3)
@@ -930,22 +938,29 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
 def _severity_overlay(cls: np.ndarray, grid: Grid, png: Path, meta: Path) -> None:
     from matplotlib.colors import to_rgba
     from PIL import Image
-    from rasterio.warp import Resampling, calculate_default_transform, reproject
-    tr, w, h = calculate_default_transform(CRS, "EPSG:4326", grid.width, grid.height, *grid.bounds)
+    gdal = _gdal()
+    src = gdal.GetDriverByName("MEM").Create("", grid.width, grid.height, 1, gdal.GDT_Int16)
+    src.SetGeoTransform(grid.geotransform)
+    src.SetSpatialRef(_srs(CRS))
+    src.GetRasterBand(1).SetNoDataValue(-1)
+    src.GetRasterBand(1).WriteArray(cls.astype("int16"))
+    # GDAL's default longitude/latitude grid for this raster (a VRT: nothing is computed yet),
+    # then the same extent origin with pixels `scale` times larger, so the PNG is at most ~1500 px
+    vrt = gdal.Warp("", src, format="VRT", dstSRS="EPSG:4326")
+    w, h = vrt.RasterXSize, vrt.RasterYSize
+    west, dx, _, north, _, dy = vrt.GetGeoTransform()
     scale = max(1, int(math.ceil(max(w, h) / 1500)))
     w, h = w // scale, h // scale
-    tr = tr * tr.scale(scale, scale)
-    dst = np.full((h, w), -1, "int8")
-    reproject(cls, dst, src_transform=grid.transform, src_crs=CRS, dst_transform=tr,
-              dst_crs="EPSG:4326", resampling=Resampling.nearest, src_nodata=-1, dst_nodata=-1)
+    east, south = west + dx * scale * w, north + dy * scale * h
+    out = gdal.Warp("", src, format="MEM", dstSRS="EPSG:4326", outputBounds=(west, south, east, north),
+                    width=w, height=h, resampleAlg="near", srcNodata=-1, dstNodata=-1)
+    dst = out.GetRasterBand(1).ReadAsArray()
     rgba = np.zeros((h, w, 4), "uint8")
     for i, c in enumerate(SEVERITY_COLOURS):
         if i == 0:
             continue   # unburnt transparent
         rgba[dst == i] = [int(255 * v) for v in to_rgba(c, 0.8)]
     Image.fromarray(rgba).save(png)
-    west, north = tr.c, tr.f
-    east, south = west + tr.a * w, north + tr.e * h
     meta.write_text(json.dumps(dict(bounds=[[south, west], [north, east]])))
 
 
@@ -987,73 +1002,131 @@ def _coastline():
 
 
 def overview() -> None:
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    from shapely.geometry import shape
-
+    """summary_all.csv, one overview figure per site group, the interactive map and the landing page."""
     summaries = []
     for d in sorted(OUTPUTS.glob("*/summary.csv")):
         summaries += _read_csv(d)
     if not summaries:
         raise SystemExit("No finished sites yet: run --site first")
     summaries.sort(key=lambda r: r["ignition"])
+    for r in summaries:   # sites run with --fire-id or --lon/--lat go with the major fires
+        r["groups"] = ";".join(SITES.get(r["site"], {}).get("groups", ["tasmania"]))
     _write_csv(OUTPUTS / "summary_all.csv", summaries)
-    # Colour = fire year (viridis, trimmed before the pale yellow end): meaningful, colour-blind
-    # safe, and it scales to any number of fires.
+    colours = _year_colours(summaries)[0]   # colour = fire year, as in the overview figures
+    groups = {}
+    for g in GROUPS:
+        rows = [r for r in summaries if g in r["groups"].split(";")]
+        if rows:
+            groups[g] = rows
+            _overview_figure(rows, g)
+    _folium_map(summaries, colours)
+    _landing_page(groups)
+    print(f"wrote outputs/tasmania/: {', '.join(GROUPS[g][3] for g in groups)}, sites_map.html, "
+          f"index.html and summary_all.csv ({len(summaries)} sites)")
+
+
+def _year_colours(summaries: list[dict]):
+    """Colour = fire year (viridis, trimmed before the pale yellow end): meaningful, colour-blind
+    safe, and it scales to any number of fires. Returns site -> hex, the colormap, the norm and
+    the years."""
     from matplotlib import colormaps
     from matplotlib.colors import Normalize, to_hex
     years = [int(r["ignition"][:4]) for r in summaries]
     year_norm = Normalize(min(years), max(max(years), min(years) + 1))
     year_cmap = colormaps["viridis"].resampled(256)
-    year_colour = lambda y: to_hex(year_cmap(0.88 * year_norm(y)))
-    colours = {r["site"]: year_colour(int(r["ignition"][:4])) for r in summaries}
+    colours = {r["site"]: to_hex(year_cmap(0.88 * year_norm(int(r["ignition"][:4]))))
+               for r in summaries}
+    return colours, year_cmap, year_norm, years
 
-    fig = plt.figure(figsize=(15, 6.2), constrained_layout=True)
+
+def _overview_figure(summaries: list[dict], group: str) -> None:
+    """Map of the sites, the severity mix of each fire, and recovery curves, for one group."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import Normalize
+    from shapely.geometry import shape
+
+    local = group != "tasmania"     # zoomed map with numbered dots, not the whole state
+    colours, year_cmap, year_norm, years = _year_colours(summaries)
+    number = {r["site"]: i + 1 for i, r in enumerate(summaries)}
+    tag = (lambda r: f"{number[r['site']]}. ") if local else (lambda r: "")
+    fig = plt.figure(figsize=(15, max(6.2, 2.5 + 0.28 * len(summaries))), constrained_layout=True)
     gs = fig.add_gridspec(1, 3, width_ratios=[1.0, 1.15, 1.15])
     ax = fig.add_subplot(gs[0])
-    small: list[dict] = []
     small_key = ""
-    label_offset = {"riveaux-road": (-70, -22), "gell-river": (-62, -6),
-                    "lake-mackenzie": (-100, -34), "mangana-road": (-40, 28)}
-    for g in _coastline():
-        for ring in _rings(to_albers(g)):
-            x, y = ring.xy
-            ax.fill(x, y, color="#f0f0f0", ec="#636363", lw=0.5)
-    for r in summaries:
-        b = json.loads((OUTPUTS / r["site"] / "boundary.geojson").read_text())
-        g = to_albers(shape(b["features"][0]["geometry"]))
-        for ring in _rings(g):
-            x, y = ring.xy
-            ax.fill(x, y, color=colours[r["site"]], alpha=0.85, lw=0)
-        c = g.representative_point()
-        if float(r["official_area_ha"]) < 10000:     # number the smaller fires, name the large ones
-            ax.plot(c.x, c.y, "o", ms=6, mfc=colours[r["site"]], mec="black", mew=0.6)
-            small.append(r)
-            continue
-        ax.annotate(f"{r['fire_name']}\n{r['ignition'][:4]}", (c.x, c.y), fontsize=7,
-                    xytext=label_offset.get(r["site"], (6, 4)), textcoords="offset points",
-                    arrowprops=(dict(arrowstyle="-", color="#636363", lw=0.6)
-                                if r["site"] in label_offset else None),
-                    bbox=dict(boxstyle="round,pad=0.2", fc="white", ec=colours[r["site"]], alpha=0.85))
-    if small:
-        # number the small fires (any region) and list them in a key in the sea, bottom right
-        key = []
-        for i, r in enumerate(small, 1):
-            g = to_albers(shape(json.loads((OUTPUTS / r["site"] / "boundary.geojson").read_text())
-                                ["features"][0]["geometry"]))
+    if local:
+        geoms = {r["site"]: to_albers(shape(json.loads((OUTPUTS / r["site"] / "boundary.geojson")
+                 .read_text())["features"][0]["geometry"])) for r in summaries}
+        fx, fy, _ = _ct("EPSG:4326", CRS).TransformPoint(*FERN_TREE)
+        xs = [g.representative_point().x for g in geoms.values()] + [fx]
+        ys = [g.representative_point().y for g in geoms.values()] + [fy]
+        pad = 3000
+        x0, x1, y0, y1 = min(xs) - pad, max(xs) + pad, min(ys) - pad, max(ys) + 3 * pad   # room for N
+        for g in _coastline():
+            for ring in _rings(to_albers(g)):
+                x, y = ring.xy
+                ax.fill(x, y, color="#f0f0f0", ec="#636363", lw=0.5)
+        for r in summaries:
+            g = geoms[r["site"]]
+            for ring in _rings(g):
+                x, y = ring.xy
+                ax.fill(x, y, color=colours[r["site"]], lw=0)
             c = g.representative_point()
-            ax.annotate(str(i), (c.x, c.y), xytext=(4, 2), textcoords="offset points",
-                        fontsize=6.5, fontweight="bold")
-            key.append(f"{i}  {r['fire_name']} {r['ignition'][:4]}")
-        small_key = "Fires under 10,000 ha (numbered dots):\n" + "\n".join(key)
+            ax.plot(c.x, c.y, "o", ms=7, mfc=colours[r["site"]], mec="black", mew=0.6, zorder=3)
+            ax.annotate(str(number[r["site"]]), (c.x, c.y), xytext=(5, 4), textcoords="offset points",
+                        fontsize=8, fontweight="bold", zorder=4,
+                        bbox=dict(boxstyle="round,pad=0.12", fc="white", ec="none", alpha=0.8))
+        ax.plot(fx, fy, "*", ms=14, mfc="black", mec="white", zorder=5)
+        ax.annotate("Fern Tree", (fx, fy), xytext=(-8, 6), textcoords="offset points", fontsize=8,
+                    fontstyle="italic", ha="right", zorder=5,
+                    bbox=dict(boxstyle="round,pad=0.12", fc="white", ec="none", alpha=0.8))
+        ax.set_xlim(x0, x1); ax.set_ylim(y0, y1)
+        title = ("Fires near Fern Tree (numbered dots; Fire History, theLIST)\n"
+                 "EPSG:3577; coastline is 1:10 million, so only approximate here")
+    else:
+        small: list[dict] = []
+        label_offset = {"riveaux-road": (-70, -22), "gell-river": (-62, -6),
+                        "lake-mackenzie": (-100, -34), "mangana-road": (-40, 28)}
+        for g in _coastline():
+            for ring in _rings(to_albers(g)):
+                x, y = ring.xy
+                ax.fill(x, y, color="#f0f0f0", ec="#636363", lw=0.5)
+        for r in summaries:
+            b = json.loads((OUTPUTS / r["site"] / "boundary.geojson").read_text())
+            g = to_albers(shape(b["features"][0]["geometry"]))
+            for ring in _rings(g):
+                x, y = ring.xy
+                ax.fill(x, y, color=colours[r["site"]], alpha=0.85, lw=0)
+            c = g.representative_point()
+            if float(r["official_area_ha"]) < 10000:     # number the smaller fires, name the large ones
+                ax.plot(c.x, c.y, "o", ms=6, mfc=colours[r["site"]], mec="black", mew=0.6)
+                small.append(r)
+                continue
+            ax.annotate(f"{r['fire_name']}\n{r['ignition'][:4]}", (c.x, c.y), fontsize=7,
+                        xytext=label_offset.get(r["site"], (6, 4)), textcoords="offset points",
+                        arrowprops=(dict(arrowstyle="-", color="#636363", lw=0.6)
+                                    if r["site"] in label_offset else None),
+                        bbox=dict(boxstyle="round,pad=0.2", fc="white", ec=colours[r["site"]], alpha=0.85))
+        if small:
+            # number the small fires (any region) and list them in a key under the map
+            key = []
+            for i, r in enumerate(small, 1):
+                g = to_albers(shape(json.loads((OUTPUTS / r["site"] / "boundary.geojson").read_text())
+                                    ["features"][0]["geometry"]))
+                c = g.representative_point()
+                ax.annotate(str(i), (c.x, c.y), xytext=(4, 2), textcoords="offset points",
+                            fontsize=6.5, fontweight="bold")
+                key.append(f"{i}  {r['fire_name']} {r['ignition'][:4]}")
+            small_key = "Fires under 10,000 ha (numbered dots):\n" + "\n".join(key)
+        title = "Fire boundaries studied (Fire History, theLIST)\nEPSG:3577"
     ax.set_aspect("equal")
     ax.set_xticks([]); ax.set_yticks([])
-    ax.set_title("Fire boundaries studied (Fire History, theLIST)\nEPSG:3577", fontsize=9)
+    ax.set_title(title, fontsize=9)
     add_map_furniture(ax, list(ax.get_xlim()) + list(ax.get_ylim()))
 
     ax = fig.add_subplot(gs[1])
-    labels = [f"{r['fire_name']} ({r['ignition'][:4]})"
+    labels = [f"{tag(r)}{r['fire_name']} ({r['ignition'][:4]})"
               + (" *" if str(r.get("severity_basis", "")).startswith("initial") else "")
               for r in summaries]
     left = np.zeros(len(summaries))
@@ -1069,31 +1142,55 @@ def overview() -> None:
     ax.legend(fontsize=7, ncol=3, loc="lower center", bbox_to_anchor=(0.5, -0.32))
 
     ax = fig.add_subplot(gs[2])
-    ends = []
-    for r in summaries:
-        rec = _read_csv(OUTPUTS / r["site"] / "recovery.csv")
+    max_years = 1
+    if local:
+        # Small fires near Fern Tree are mostly low and moderate-low severity: plot those classes
+        pair = ("Moderate-low", "Low")
+        for r in summaries:
+            rec = _read_csv(OUTPUTS / r["site"] / "recovery.csv")
+            for k, ls in ((slugify(pair[0]), "-"), (slugify(pair[1]), "--")):
+                pts = [(int(x["years_since"]), float(x[f"deficit_{k}"])) for x in rec
+                       if x.get(f"deficit_{k}") not in ("", None)]
+                if pts:
+                    xs, ys = zip(*pts)
+                    max_years = max(max_years, max(xs))
+                    ax.plot(xs, ys, ls, marker="o", ms=3, color=colours[r["site"]])
+                    # label each line with its map number
+                    ax.annotate(str(number[r["site"]]), (xs[-1], ys[-1]), xytext=(4, 0),
+                                textcoords="offset points", fontsize=7, va="center",
+                                color=colours[r["site"]], fontweight="bold")
+        rec_title = (f"{pair[0]} (solid) and {pair[1].lower()} (dashed) severity recovery\n"
+                     "vs unburnt land; 0 = pre-fire; numbers as on the map")
+        right_pad = 0.5
+    else:
+        ends = []
         k = slugify("High")
-        pts = [(int(x["years_since"]), float(x[f"deficit_{k}"])) for x in rec
-               if x.get(f"deficit_{k}") not in ("", None)]
-        if pts:
-            xs, ys = zip(*pts)
-            ax.plot(xs, ys, "-", marker="o", ms=3, color=colours[r["site"]])
-            if len(xs) >= 3:     # label only lines with a few summers; newer fires bunch at the start
-                ends.append([xs[-1], ys[-1], r["fire_name"], colours[r["site"]]])
-    # direct labels at line ends, nudged apart vertically where they would overlap
-    ends.sort(key=lambda e: (e[0], e[1]))
-    for i in range(1, len(ends)):
-        if ends[i][0] == ends[i - 1][0] and ends[i][1] - ends[i - 1][1] < 0.03:
-            ends[i][1] = ends[i - 1][1] + 0.03
-    for x, y, name, c in ends:
-        ax.annotate(name, (x, y), xytext=(4, 0), textcoords="offset points", fontsize=6.5,
-                    color="#333333", va="center")
-    ax.set_xlim(right=ax.get_xlim()[1] + 2.2)
+        for r in summaries:
+            rec = _read_csv(OUTPUTS / r["site"] / "recovery.csv")
+            pts = [(int(x["years_since"]), float(x[f"deficit_{k}"])) for x in rec
+                   if x.get(f"deficit_{k}") not in ("", None)]
+            if pts:
+                xs, ys = zip(*pts)
+                max_years = max(max_years, max(xs))
+                ax.plot(xs, ys, "-", marker="o", ms=3, color=colours[r["site"]])
+                if len(xs) >= 3:     # label only lines with a few summers; newer fires bunch at the start
+                    ends.append([xs[-1], ys[-1], r["fire_name"], colours[r["site"]]])
+        # direct labels at line ends, nudged apart vertically where they would overlap
+        ends.sort(key=lambda e: (e[0], e[1]))
+        for i in range(1, len(ends)):
+            if ends[i][0] == ends[i - 1][0] and ends[i][1] - ends[i - 1][1] < 0.03:
+                ends[i][1] = ends[i - 1][1] + 0.03
+        for x, y, name, c in ends:
+            ax.annotate(name, (x, y), xytext=(4, 0), textcoords="offset points", fontsize=6.5,
+                        color="#333333", va="center")
+        rec_title = "High-severity recovery vs unburnt land\n0 = pre-fire burn ratio"
+        right_pad = 2.2      # room for the names
     ax.axhline(0, color="black", lw=0.8)
     ax.set_xlabel("Summers since the fire (years)")
+    ax.set_xticks(range(1, max_years + 1))
+    ax.set_xlim(0.5, max_years + 0.5 + right_pad)
     ax.set_ylabel("NBR deficit vs before the fire (unitless)")
-    ax.set_title("High-severity recovery vs unburnt land\n"
-                 "0 = pre-fire burn ratio; colour = fire year", fontsize=9)
+    ax.set_title(rec_title + "; colour = fire year", fontsize=9)
     ax.grid(alpha=0.3)
     sm = plt.cm.ScalarMappable(norm=Normalize(0, 1), cmap=year_cmap)
     cb = fig.colorbar(sm, ax=ax, shrink=0.6, pad=0.01)
@@ -1103,20 +1200,17 @@ def overview() -> None:
     cb.ax.tick_params(labelsize=7)
     cb.set_label("Fire year (ignition)", fontsize=8)
     cb.ax.set_ylim(0, 0.88)
-    fig.suptitle("Recent Tasmanian bushfires from Sentinel-2: where they burnt, how severely, and "
-                 "how fast the vegetation is recovering", fontsize=11)
+    fig.suptitle(f"{GROUPS[group][1]} from Sentinel-2 ({len(summaries)} fires, "
+                 f"{summaries[0]['ignition'][:4]}-{summaries[-1]['ignition'][:4]}): where they burnt, "
+                 "how severely, and how fast the vegetation is recovering", fontsize=11)
     fig.text(0.5, -0.02, "Each fire: median Sentinel-2 composites before the fire and each summer "
              "after; dNBR corrected with unburnt land nearby. " + ATTRIBUTION +
              " Coastline: Natural Earth (public domain).", ha="center", va="top", fontsize=7,
              wrap=True)
     if small_key:   # outside the constrained layout, in the empty space under the map
         fig.text(0.012, 0.235, small_key, ha="left", va="top", fontsize=6.5, in_layout=False)
-    fig.savefig(OUTPUTS / "overview.png", dpi=130, bbox_inches="tight")
+    fig.savefig(OUTPUTS / GROUPS[group][3], dpi=130, bbox_inches="tight")
     plt.close(fig)
-    _folium_map(summaries, colours)
-    _landing_page(summaries)
-    print(f"wrote outputs/tasmania/overview.png, sites_map.html and summary_all.csv "
-          f"({len(summaries)} sites)")
 
 
 LANDING_CSS = """
@@ -1164,6 +1258,13 @@ vertical-align:-1px}
 .figlinks{margin-top:auto;font-size:.9rem;display:flex;gap:12px;flex-wrap:wrap}
 ul{padding-left:20px;max-width:72ch}
 li{margin-bottom:6px}
+.tabs>input{position:absolute;opacity:0;pointer-events:none}
+.tablist{display:flex;gap:4px;margin-top:28px;border-bottom:1px solid var(--line)}
+.tablist label{padding:10px 18px;border:1px solid transparent;border-radius:10px 10px 0 0;
+margin-bottom:-1px;cursor:pointer;font-weight:600;color:var(--muted)}
+.tabs>input:focus-visible~.tablist label{outline:2px solid var(--accent)}
+.panel{display:none}
+h3.sub{font-size:1.1rem;margin:28px 0 10px}
 footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);
 padding-top:16px}
 """
@@ -1181,11 +1282,13 @@ def _num(v, fmt="{:,.0f}", suffix="") -> str:
         return "n/a"
 
 
-def _landing_page(summaries: list[dict]) -> None:
-    """outputs/tasmania/index.html: a static landing page for GitHub Pages (no external assets)."""
+def _landing_page(groups: dict[str, list[dict]]) -> None:
+    """outputs/tasmania/index.html: a static landing page for GitHub Pages (no external assets),
+    with one tab per site group (CSS only: radio buttons, no scripts)."""
     sev_vars = ["--sev-un", "--sev-low", "--sev-ml", "--sev-mh", "--sev-hi"]
-    cards = []
-    for r in sorted(summaries, key=lambda r: r["ignition"], reverse=True):
+    summaries = list({r["site"]: r for rows in groups.values() for r in rows}.values())
+    card_html = {}
+    for r in summaries:
         site = r["site"]
         ign = dt.date.fromisoformat(r["ignition"])
         out = dt.date.fromisoformat(r["declared_out"])
@@ -1213,7 +1316,11 @@ def _landing_page(summaries: list[dict]) -> None:
             why = base_txt.split("; ", 1)[-1].rstrip(")") if "; " in base_txt else ""
             notes.append(f"Baseline is the images just before the fire ({why}), not the summer "
                          "before, so seasonal change may add some false low severity.")
-        if float(r["official_area_ha"]) < 1000:
+        area = float(r["official_area_ha"])
+        if area < 10:
+            notes.append(f"Very small fire: {area:.1f} ha is only about {area / 0.04:.0f} pixels of "
+                         "20 m, so the severity and recovery numbers are indicative only.")
+        elif area < 1000:
             notes.append("Small fire: near the limit of 20 m pixels.")
         false_pct = 100 * float(r["burnt_outside_ha"]) / max(float(r["control_ha"]), 1)
         if false_pct > 8:
@@ -1221,8 +1328,8 @@ def _landing_page(summaries: list[dict]) -> None:
                          "(clearing, development, harvesting or drying): read low severity with "
                          "caution.")
         note_html = "".join(f'<p class="note">{_esc(n)}</p>' for n in notes)
-        cards.append(f"""
-<article class="card" id="{_esc(site)}">
+        card_html[site] = (f"""
+<article class="card">
   <a href="{_esc(site)}/dnbr_severity.png"><img loading="lazy" src="{_esc(site)}/dnbr_severity.png"
      alt="Burn severity map of the {_esc(r['fire_name'])} fire"></a>
   <div class="body">
@@ -1247,6 +1354,30 @@ def _landing_page(summaries: list[dict]) -> None:
 </article>""")
     legend = "".join(f'<span><i style="background:var({v})"></i>{n}</span>'
                      for (n, _, _), v in zip(SEVERITY, sev_vars))
+    inputs, labels, panels = [], [], []
+    for i, (g, rows) in enumerate(groups.items()):
+        tab, heading, blurb, fig = GROUPS[g]
+        inputs.append(f'<input type="radio" name="tab" id="tab-{g}"{" checked" if i == 0 else ""}>')
+        labels.append(f'<label for="tab-{g}" role="tab">{_esc(tab)} ({len(rows)})</label>')
+        cards = "".join(card_html[r["site"]] for r in sorted(rows, key=lambda r: r["ignition"],
+                                                               reverse=True))
+        panels.append(f"""<section class="panel" id="panel-{g}">
+<h2>{_esc(heading)}: {_esc(blurb)}</h2>
+<figure>
+  <a href="{fig}"><img src="{fig}" alt="Overview of the {_esc(tab.lower())}: a map of the fires, the burn severity mix of each fire, and recovery of high-severity areas by years since the fire"></a>
+  <figcaption>Left: the fires. Middle: severity mix inside each official boundary.
+  Right: how fast high-severity (solid) and moderate-high (dashed) areas regain their pre-fire
+  burn ratio, relative to unburnt land nearby.</figcaption>
+</figure>
+<h3 class="sub">The fires, most recent first</h3>
+<div class="legend">{legend}</div>
+<div class="grid">{cards}
+</div>
+</section>""")
+    tab_inputs, tab_labels, tab_panels = "\n".join(inputs), "".join(labels), "\n".join(panels)
+    tab_css = "".join(f"#tab-{g}:checked~.tablist label[for=tab-{g}]{{background:var(--card);"
+                      f"border-color:var(--line);border-bottom-color:var(--card);color:var(--ink)}}"
+                      f"#tab-{g}:checked~#panel-{g}{{display:block}}" for g in groups)
     page = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -1254,30 +1385,22 @@ def _landing_page(summaries: list[dict]) -> None:
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tasmanian Bushfires from Sentinel-2</title>
 <meta name="description" content="Where recent Tasmanian bushfires burnt, how severely, and how fast the vegetation is recovering, from Sentinel-2 satellite images.">
-<style>{LANDING_CSS}</style>
+<style>{LANDING_CSS}{tab_css}</style>
 </head>
 <body>
 <main>
 <h1>Tasmanian bushfires from Sentinel-2</h1>
-<p class="lede">Where {len(summaries)} recent Tasmanian bushfires burnt, how severely, and how fast the
+<p class="lede">Where {len(summaries)} Tasmanian bushfires burnt, how severely, and how fast the
 vegetation is recovering, measured from free Sentinel-2 satellite images and checked against the
 State's official fire boundaries.</p>
 <div class="links">
-  <a href="sites_map.html">Interactive map</a>
-  <a href="overview.png">Overview figure</a>
+  <a href="sites_map.html">Interactive map (all fires)</a>
   <a href="summary_all.csv">All numbers (CSV)</a>
 </div>
-
-<figure>
-  <a href="overview.png"><img src="overview.png" alt="Overview: a map of the fires studied, the burn severity mix of each fire, and recovery of high-severity areas by years since the fire"></a>
-  <figcaption>Left: the fires studied. Middle: severity mix inside each official boundary.
-  Right: how fast high-severity (solid) and moderate-high (dashed) areas regain their pre-fire
-  burn ratio, relative to unburnt land nearby.</figcaption>
-</figure>
-
-<h2>The fires, most recent first</h2>
-<div class="legend">{legend}</div>
-<div class="grid">{''.join(cards)}
+<div class="tabs">
+{tab_inputs}
+<div class="tablist" role="tablist">{tab_labels}</div>
+{tab_panels}
 </div>
 
 <h2>How to read this</h2>
@@ -1342,7 +1465,9 @@ def _folium_map(summaries: list[dict], colours: dict) -> None:
         "<div style='position:fixed;bottom:30px;right:10px;z-index:9999;background:white;"
         "padding:6px;font-size:12px;border:1px solid #999'><b>Burn severity (dNBR)</b>"
         f"{legend}<div style='font-size:10px;max-width:220px'>{ATTRIBUTION}</div></div>"))
-    folium.LayerControl(collapsed=False).add_to(m)
+    folium.Marker([FERN_TREE[1], FERN_TREE[0]], tooltip="Fern Tree",
+                  icon=folium.Icon(color="black", icon="star")).add_to(m)
+    folium.LayerControl(collapsed=True).add_to(m)
     m.save(str(OUTPUTS / "sites_map.html"))
 
 
@@ -1426,6 +1551,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--fire-id", type=int, action="append", help="any FIRE_ID from Fire History")
     p.add_argument("--lon", type=float, help="longitude: analyse the latest fire covering this point")
     p.add_argument("--lat", type=float, help="latitude (with --lon)")
+    p.add_argument("--group", choices=sorted(GROUPS), action="append",
+                   help="every built-in site in a group (repeatable), then the overview")
     p.add_argument("--all", action="store_true", help="every built-in site, then the overview")
     p.add_argument("--overview", action="store_true", help="overview figure and interactive map")
     p.add_argument("--candidates", action="store_true",
@@ -1439,7 +1566,7 @@ def main(argv: list[str] | None = None) -> int:
         print("Built-in sites (python tas_fires.py --site KEY):")
         for k, v in SITES.items():
             rec, _ = get_fire(v["fire_id"])
-            print(f"  {k:16} {rec['name']:22} ignited {rec['ignition']}  {rec['area_ha']:>8,.0f} ha"
+            print(f"  {k:24} {rec['name']:22} ignited {rec['ignition']}  {rec['area_ha']:>8,.0f} ha"
                   f"  {v['region']}")
         return 0
     if a.candidates:
@@ -1452,7 +1579,10 @@ def main(argv: list[str] | None = None) -> int:
         _print_fires(search_fires(a.search))
         return 0
     jobs = []
-    for k in (sorted(SITES) if a.all else (a.site or [])):
+    keys = sorted(SITES) if a.all else list(a.site or [])
+    for grp in a.group or []:
+        keys += [k for k, v in SITES.items() if grp in v["groups"] and k not in keys]
+    for k in keys:
         jobs.append((k, SITES[k]["fire_id"], SITES[k]["region"]))
     for fid in a.fire_id or []:
         rec, _ = get_fire(fid)
@@ -1472,7 +1602,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     for key, fid, region in jobs:
         analyse_fire(key, fid, region, max_dates=a.max_dates, refresh=a.refresh)
-    if a.overview or a.all:
+    if a.overview or a.all or a.group:
         overview()
     return 0
 

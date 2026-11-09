@@ -63,7 +63,7 @@ def test_grid_snaps_and_coarsens():
 def test_true_north_in_tasmania():
     # Tasmania is ~14 degrees east of the EPSG:3577 central meridian (132 E): grid north and true
     # north differ by several degrees there, and not at all on the central meridian.
-    from pyproj import Transformer
+    Transformer = pytest.importorskip("pyproj").Transformer   # independent of GDAL's osr
     to_xy = Transformer.from_crs("EPSG:4326", tf.CRS, always_xy=True)
     a = tf.true_north_angle(*to_xy.transform(146.5, -42.0))
     assert 3 < abs(a) < 10
@@ -85,6 +85,67 @@ def test_group_by_date_least_cloudy_first():
     g = tf.group_by_date(items)
     assert [x[0] for x in g] == ["2019-01-11", "2019-01-01"]
     assert len(g[1][1]) == 2 and g[1][2] == pytest.approx(40)
+
+
+# ----- GDAL (osgeo.gdal) helpers: local files only -----
+
+def _small_grid():
+    return tf.Grid(1_200_000.0, -4_800_000.0, 20.0, 50, 40)
+
+
+def test_geotransform_and_lonlat_bounds():
+    g = _small_grid()
+    assert g.geotransform == (1_200_000.0, 20.0, 0.0, -4_800_000.0, 0.0, -20.0)
+    w, s, e, n = g.bounds_lonlat()
+    assert 140 < w < e < 150 and -45 < s < n < -40      # south-east Australia, lon/lat order
+
+
+def test_rasterize_square_by_pixel_centre():
+    from shapely.geometry import box
+    g = _small_grid()
+    # covers columns 5-14 and rows 10-19 exactly; the 1 m extra doesn't reach the next centres
+    sq = box(g.x0 + 100 - 1, g.y0 - 400 - 1, g.x0 + 300 + 1, g.y0 - 200 + 1)
+    m = tf.rasterize([sq], g)
+    assert m.shape == (40, 50) and m.sum() == 100
+    assert m[10:20, 5:15].all()
+    assert not tf.rasterize([], g).any()
+
+
+def test_warp_local_file_onto_grid(tmp_path):
+    gdal = tf._gdal()
+    g = _small_grid()
+    src = tmp_path / "src.tif"     # the same area at 10 m: values = column index, nodata -999
+    ds = gdal.GetDriverByName("GTiff").Create(str(src), 100, 80, 1, gdal.GDT_Int16)
+    ds.SetGeoTransform((g.x0, 10.0, 0.0, g.y0, 0.0, -10.0))
+    ds.SetSpatialRef(tf._srs(tf.CRS))
+    a = np.tile(np.arange(100, dtype="int16"), (80, 1))
+    a[:, :10] = tf.NODATA
+    ds.GetRasterBand(1).SetNoDataValue(tf.NODATA)
+    ds.GetRasterBand(1).WriteArray(a)
+    ds = None
+    out = tf._warp(str(src), g)
+    assert out.shape == (40, 50) and out.dtype == np.int16
+    assert (out[:, :5] == tf.NODATA).all()
+    # nearest neighbour from full resolution: 20 m pixel centres fall at 10 m columns 2k+1 or 2k
+    assert set(np.unique(out[:, 5:] - 2 * np.arange(5, 50))) <= {0, 1}
+    left = tf._warp(str(src), tf.Grid(g.x0 - 500, g.y0, 20.0, 50, 40))  # 25 px off the file
+    assert (left[:, :25] == tf.NODATA).all() and (left[:, 30:] != tf.NODATA).all()
+
+
+def test_composite_round_trip(tmp_path):
+    g = _small_grid()
+    rng = np.random.default_rng(0)
+    comp = {b: rng.random((g.height, g.width)).astype("float32") for b in list(tf.BANDS) + ["n_clear"]}
+    comp["nir"][0, :] = np.nan
+    path = tmp_path / "c_20m.tif"
+    tf._write_composite(path, comp, g, {"dates": ["2020-01-01"]})
+    back, meta = tf._read_composite(path)
+    assert list(back) == list(comp) and meta == {"dates": ["2020-01-01"]}
+    for b in comp:
+        np.testing.assert_array_equal(back[b], comp[b])
+    ds = tf._gdal().Open(str(path))
+    assert ds.GetGeoTransform() == g.geotransform
+    assert ds.GetSpatialRef().GetAuthorityCode(None) == "3577"
 
 
 def test_region_of():

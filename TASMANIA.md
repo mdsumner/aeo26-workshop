@@ -6,8 +6,21 @@ free Sentinel-2 satellite images and the State's official fire boundaries.
 
 ## Run it
 
+All raster reading, warping and writing goes through GDAL's own Python bindings (`osgeo.gdal`).
+The image search is plain JSON from DEA's STAC API, fetched with `requests`: no STAC library is
+needed. The bindings must match an installed GDAL (3.8 or later), so install them with GDAL, not
+from PyPI on their own:
+
+| Where | GDAL bindings |
+|---|---|
+| Docker | `ghcr.io/hypertidy/gdal-r-python` already has them (GDAL 3.13), and R's `gdalraster` and `terra` too |
+| Ubuntu or Debian | `sudo apt install python3-gdal` (use the system `python3`) |
+| conda, mamba or pixi | the `gdal` package from conda-forge |
+
+Then the rest, with pip:
+
 ```bash
-pip install -r requirements.txt pyproj shapely matplotlib-scalebar requests pyshp
+pip install numpy shapely matplotlib matplotlib-scalebar requests pyshp pillow folium pytest
 ```
 
 ```bash
@@ -26,6 +39,7 @@ Other ways to choose a fire:
 | `python tas_fires.py --search "pine tier"` | Search Fire History bushfires (2015-16 onwards) by name |
 | `python tas_fires.py --fire-id 10137` | Any fire by its Fire History `FIRE_ID` |
 | `python tas_fires.py --lon 146.7 --lat -43.1` | The most recent bushfire that covers this point |
+| `python tas_fires.py --group fern-tree` | Every built-in site in a group (`tasmania` or `fern-tree`), then the overview |
 | `python tas_fires.py --all` | Every built-in site, then the overview |
 | `python tas_fires.py --overview` | Rebuild the overview and interactive map from finished sites |
 | `python tas_fires.py --candidates` | Triage every other bushfire since 2015-16 (100 ha or more) into `outputs/tasmania/candidates.csv`: region, distance from Fern Tree, which baseline and assessment it would get, and pixel count |
@@ -34,6 +48,11 @@ The first run of a site downloads about 0.5-2 GB of image pieces and takes about
 Composites are cached in `downloads/tasmania/<site>/` (not committed), so later runs are fast.
 
 ## Built-in sites
+
+The built-in sites are listed in `sites.csv` (key, `FIRE_ID`, groups, region), which `tas_fires.py`
+and `tas_fires.R` both read. To add a site, add a row. Each group is a tab on the landing page.
+
+### Major fires (group `tasmania`)
 
 | Key | Fire | Ignited | Official area | Landscape |
 |---|---|---|---|---|
@@ -62,6 +81,34 @@ to home. `glenlusk` was declared out in December 2025, so it has no full summer 
 Its severity is an *initial assessment* from the images just after the fire, and the tool switches
 to the first summer automatically once summer 2026-27 has passed.
 
+### Near Fern Tree (group `fern-tree`)
+
+Bushfires since 2015-16 within about 20 km of Fern Tree, on kunanyi/Mount Wellington: every fire of
+5 ha or more within 20 km, plus fires of 2 ha or more within 10 km. Proctors Road, Margate Plain and
+Glenlusk are in this group too. Most of the 99 bushfires recorded within 15 km are campfires under
+1 ha, which 20 m pixels cannot measure (one pixel is 0.04 ha). Even the fires listed here are small:
+2 ha is about 50 pixels, so their severity and recovery numbers are indicative only, and the landing
+page says so on each card under 10 ha.
+
+| Key | Fire | Ignited | Official area | From Fern Tree |
+|---|---|---|---|---|
+| `turn-creek-road-2016` | Turn Creek Road | Jan 2016 | 7.2 ha | 14 km west |
+| `tianna-road-2017` | Tianna Road | Feb 2017 | 22.3 ha | 11 km north-east |
+| `magnolia-road-2017` | Magnolia Road | Oct 2017 | 6.9 ha | 16 km north-east |
+| `peter-murrell-2017` | Peter Murrell NR, Blackmans Bay | Nov 2017 | 4.9 ha | 9 km south |
+| `holmfield-avenue-2017` | Holmfield Avenue | Nov 2017 | 13.0 ha | 15 km east |
+| `richmond-road-2019` | Richmond Road | Jan 2019 | 15.1 ha | 20 km north-east |
+| `brogo-way-2019` | Brogo Way | Jan 2019 | 5.8 ha | 16 km east |
+| `slatterys-road-2019` | Slatterys Road, Electrona | Oct 2019 | 6.2 ha | 14 km south |
+| `mount-hull-road-2020` | Mount Hull Road | Nov 2020 | 9.9 ha | 9 km north-west |
+| `wyre-forest-road-2021` | Wyre Forest Road, Molesworth | Mar 2021 | 16.6 ha | 15 km north-west |
+| `downhams-road-2023-may` | Downhams Road | May 2023 | 9.3 ha | 15 km north-east |
+| `downhams-road-2023-oct` | Downhams Road | Oct 2023 | 6.8 ha | 15 km north-east |
+| `channel-highway-2024` | Channel Highway | Feb 2024 | 2.4 ha | 8 km south-east |
+| `mount-hull-road-2024` | Mount Hull Road | Oct 2024 | 2.0 ha | 10 km north |
+| `snowy-view-heights-2024` | Snowy View Heights | Oct 2024 | 53.6 ha | 18 km west |
+| `glen-dhu-road-2026` | Glen Dhu Road | Feb 2026 | 5.6 ha | 18 km north-west |
+
 ## Outputs
 
 For each site, in `outputs/tasmania/<site>/`:
@@ -78,12 +125,13 @@ Across all sites, in `outputs/tasmania/`:
 
 | File | What it is |
 |---|---|
-| `index.html` | Landing page: one card per fire (most recent first), with links to every figure. Built for GitHub Pages, with no external files |
+| `index.html` | Landing page with a tab per group of sites, and one card per fire (most recent first) with links to every figure. Built for GitHub Pages, with no external files or scripts |
 | `sites_map.html` | Interactive map with the fire boundaries and severity overlays (embedded), and popups linking to the figures |
-| `overview.png` | Map of the sites, the severity mix of each fire, and recovery curves |
+| `overview.png` | Major fires: map of the sites, the severity mix of each fire, and recovery curves |
+| `overview_fern_tree.png` | The same for the fires near Fern Tree, on a zoomed map with numbered fires |
 | `summary_all.csv` | One row per fire |
 
-`python tas_fires.py --overview` rebuilds all four from the finished sites. The links are relative,
+`python tas_fires.py --overview` rebuilds all of these from the finished sites. The links are relative,
 so the pages work on GitHub Pages (`/outputs/tasmania/`) or from a local copy of the repo.
 
 ## Method
