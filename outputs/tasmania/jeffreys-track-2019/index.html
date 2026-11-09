@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeffreys Track fire, 2019: Tasmanian Bushfires from Sentinel-2</title>
+<style>
+:root{--bg:#fbfaf7;--card:#ffffff;--ink:#1d1d1b;--muted:#5d5d58;--line:#e2e0da;--accent:#0072B2;
+--chip:#f1efe9;--sev-low:#fed976;--sev-ml:#fd8d3c;--sev-mh:#e31a1c;--sev-hi:#800026;--sev-un:#d9d9d9}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151514;--card:#1f1f1d;
+--ink:#ecebe6;--muted:#a8a69f;--line:#34332f;--accent:#56B4E9;--chip:#2a2926}}
+:root[data-theme="dark"]{--bg:#151514;--card:#1f1f1d;--ink:#ecebe6;--muted:#a8a69f;--line:#34332f;
+--accent:#56B4E9;--chip:#2a2926}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,
+"Segoe UI",Roboto,sans-serif}
+main{max-width:1100px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:clamp(1.6rem,4vw,2.3rem);line-height:1.15;margin:0 0 8px}
+h2{font-size:1.25rem;margin:40px 0 12px}
+p{margin:0 0 12px;max-width:72ch}
+a{color:var(--accent)}
+.lede{color:var(--muted);font-size:1.05rem}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 8px}
+.links a{display:inline-block;padding:8px 14px;border:1px solid var(--line);border-radius:999px;
+background:var(--card);text-decoration:none;font-weight:600}
+figure{margin:16px 0;background:var(--card);border:1px solid var(--line);border-radius:10px;
+padding:8px}
+figure img{width:100%;height:auto;display:block;border-radius:6px}
+figcaption{font-size:.85rem;color:var(--muted);padding:8px 4px 2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;
+display:flex;flex-direction:column}
+.card img{width:100%;aspect-ratio:16/10;object-fit:cover;object-position:right center;
+display:block;border-bottom:1px solid var(--line);background:var(--chip)}
+.card .pic{position:relative}
+.head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.head-text{display:flex;flex-direction:column;gap:8px;min-width:0}
+.head h1{margin:0}
+.crumbs{font-size:.9rem;margin:0 0 8px}
+.pager{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.9rem;
+margin:0 0 16px}
+.pager a.older{margin-left:auto}
+.detail .stats{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin:20px 0 12px}
+.detail .bar{max-width:72ch;margin-bottom:8px}
+.detail .legend{margin-bottom:16px}
+.detail .note{max-width:72ch}
+.inset{flex:none;width:96px;height:auto;padding:3px;background:var(--card);
+border:1px solid var(--line);border-radius:6px}
+.card .body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
+.card h3{margin:0;font-size:1.1rem}
+.when{color:var(--muted);font-size:.9rem;margin:0}
+.region{font-size:.92rem;margin:0}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:4px 0;font-size:.9rem}
+.stats div{display:flex;flex-direction:column}
+.stats b{font-size:1.15rem;font-variant-numeric:tabular-nums}
+.stats span{color:var(--muted);font-size:.8rem}
+.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--chip)}
+.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.8rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;
+vertical-align:-1px}
+.warn{border:1px solid var(--sev-ml);border-left:6px solid var(--sev-ml);border-radius:8px;
+background:var(--card);padding:10px 14px;margin:14px 0;max-width:72ch;font-size:.95rem}
+.warn p{margin:0}
+.note{font-size:.82rem;color:var(--muted);border-left:3px solid var(--sev-ml);padding-left:8px}
+.figlinks{margin-top:auto;font-size:.9rem;display:flex;gap:12px;flex-wrap:wrap}
+ul{padding-left:20px;max-width:72ch}
+li{margin-bottom:6px}
+.tabs>input{position:absolute;opacity:0;pointer-events:none}
+.tablist{display:flex;gap:4px;margin-top:28px;border-bottom:1px solid var(--line)}
+.tablist label{padding:10px 18px;border:1px solid transparent;border-radius:10px 10px 0 0;
+margin-bottom:-1px;cursor:pointer;font-weight:600;color:var(--muted)}
+.tabs>input:focus-visible~.tablist label{outline:2px solid var(--accent)}
+.panel{display:none}
+h3.sub{font-size:1.1rem;margin:28px 0 10px}
+footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);
+padding-top:16px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="tas-inset" viewBox="0 0 405.7 515.0"><path d="M265.1,488.1 258.6,499.4 253.4,496.2 253.8,492.6 252.2,491.5 254.1,490.3 252.5,488.6 250.2,494.2 247.4,497.3 245.9,497.1 241.5,488.8 242.2,486.9 243.6,487.5 247.5,492.2 249.0,492.4 249.1,483.1 251.2,481.7 253.7,485.5 255.4,482.6 254.6,479.9 261.9,473.1 265.1,488.1ZM271.4,458.6 273.2,472.0 272.1,473.1 269.4,472.1 266.6,473.3 265.9,469.9 269.7,467.0 262.4,462.8 263.4,460.7 267.6,460.5 265.5,458.3 268.9,453.7 271.4,458.6ZM312.9,470.6 311.8,465.1 309.3,467.5 309.6,472.6 307.1,472.2 302.8,476.2 296.1,466.6 296.1,463.5 300.9,461.0 292.9,456.4 291.3,450.8 292.7,448.6 297.0,447.4 297.3,442.5 298.5,442.3 301.5,443.8 299.6,449.9 303.0,453.8 307.3,456.0 313.4,454.8 315.5,453.4 313.0,453.0 310.5,449.5 309.9,446.7 312.3,445.6 310.2,444.6 311.3,440.2 310.3,439.2 305.0,439.4 302.3,437.6 298.8,437.9 296.3,434.6 293.5,433.5 291.9,429.0 286.5,430.0 283.8,431.6 283.3,434.6 286.8,445.3 282.2,449.9 275.6,451.4 273.4,446.0 274.8,444.6 277.4,448.7 278.8,448.0 280.5,444.7 279.2,442.9 280.9,437.2 276.0,438.5 275.5,434.3 271.1,430.8 266.3,421.3 264.2,422.3 268.5,428.9 270.8,437.7 267.7,443.1 267.1,450.0 262.3,446.0 260.7,447.6 263.9,454.0 258.8,458.4 258.0,471.8 253.6,474.8 250.0,472.6 250.0,469.4 244.5,467.8 247.1,464.3 246.7,459.7 242.3,464.3 239.5,461.5 239.9,454.3 238.7,453.9 235.9,455.9 234.5,463.1 243.2,471.5 244.3,475.1 241.1,477.6 237.5,475.7 232.4,478.1 237.3,478.3 239.9,480.7 234.2,487.2 227.8,487.2 234.1,490.8 235.2,493.3 229.1,492.4 228.9,498.4 224.9,497.9 223.9,500.6 227.7,503.6 226.0,506.7 219.0,509.0 215.7,505.3 207.8,506.4 205.4,501.6 199.6,497.2 198.8,490.9 196.8,487.9 196.4,493.9 194.8,493.0 192.6,494.4 181.4,492.6 178.5,489.7 174.2,492.1 172.3,487.6 170.3,486.6 167.8,487.1 165.6,492.0 164.4,488.9 162.7,488.0 158.9,489.0 158.6,491.9 156.4,490.9 151.7,491.8 152.8,481.1 151.2,477.4 146.3,472.4 147.1,471.1 152.0,473.4 150.0,469.5 159.1,471.2 161.3,472.6 164.7,478.5 165.2,474.1 166.9,475.1 166.9,473.2 170.7,477.0 171.5,468.9 166.9,463.8 161.5,469.5 159.5,467.6 158.5,463.4 156.0,467.8 154.5,467.6 150.8,462.7 150.4,456.5 146.9,452.8 146.2,458.2 143.0,458.7 142.0,460.6 146.1,460.9 146.6,462.8 144.0,464.4 138.7,462.3 137.2,453.0 132.3,445.5 132.4,440.8 129.7,441.5 127.7,440.3 129.5,435.1 125.2,431.9 122.8,425.9 115.6,423.7 111.4,415.0 108.4,403.4 105.8,400.9 108.0,396.5 106.8,395.2 105.9,389.4 103.6,388.8 102.4,384.7 99.1,383.6 102.3,379.0 98.7,372.7 98.1,368.3 99.2,364.6 97.3,354.4 97.2,339.0 99.4,341.7 100.8,346.9 105.9,349.5 107.8,354.0 115.9,360.9 117.5,375.6 119.5,365.2 122.5,366.8 126.7,358.0 123.3,359.6 122.3,355.1 120.3,357.1 118.9,355.6 111.7,345.1 111.0,335.2 109.2,334.5 105.2,337.8 105.0,342.0 103.7,342.8 100.6,339.4 104.6,331.9 104.2,323.0 101.3,314.5 90.2,300.6 90.1,297.8 83.2,285.2 79.9,283.6 80.0,278.0 77.1,266.1 72.0,254.9 68.6,251.0 71.6,248.8 71.8,246.0 64.9,229.7 66.3,223.9 64.7,218.5 65.8,214.3 60.8,204.6 63.8,202.4 62.5,197.4 69.8,193.5 70.5,191.9 71.6,185.3 71.3,171.1 74.5,167.0 77.5,176.7 79.9,175.8 88.3,179.8 96.0,180.6 101.8,185.5 103.0,188.1 106.6,190.0 109.1,188.8 108.2,187.0 118.2,188.0 119.8,183.9 119.0,179.8 120.6,180.4 123.5,184.5 120.1,186.3 119.8,188.8 125.4,194.4 130.8,195.7 133.8,198.0 141.0,196.3 141.4,200.7 144.4,203.6 157.4,208.3 158.3,212.4 163.3,218.5 172.1,221.1 172.7,223.1 177.2,224.3 185.2,230.5 196.2,236.2 208.0,238.9 213.9,239.4 224.8,237.0 225.7,241.0 227.6,242.5 228.9,242.1 227.5,240.4 228.4,239.0 234.5,233.7 242.5,231.7 246.6,235.0 246.8,242.1 251.1,243.9 255.1,242.9 257.7,244.4 258.8,244.0 255.6,240.4 251.5,239.1 248.9,236.2 248.8,233.5 250.8,229.8 259.2,228.4 267.5,224.8 268.5,226.4 279.6,229.6 290.3,223.7 290.9,225.5 295.1,224.4 296.0,227.7 298.9,228.8 299.9,231.7 302.9,232.6 310.1,227.3 317.0,217.6 322.9,215.3 324.5,215.2 328.0,220.2 331.3,219.4 336.4,224.1 342.3,222.7 345.2,220.7 350.2,210.2 352.6,208.9 356.3,210.5 357.1,213.1 360.4,213.3 364.9,221.2 370.4,222.6 375.9,232.3 378.6,241.3 372.9,245.3 375.6,247.9 372.0,254.0 370.8,262.3 374.0,270.0 367.5,275.4 367.6,277.7 374.7,272.6 376.5,272.8 367.9,289.1 366.9,298.4 368.8,306.3 365.2,314.9 366.1,321.7 361.6,326.6 362.9,334.6 365.5,339.7 361.4,353.8 366.0,361.0 361.1,366.9 364.7,368.9 364.7,371.1 363.3,374.9 360.1,378.5 355.2,374.2 360.1,368.4 357.6,364.8 361.4,363.0 362.2,361.5 358.4,360.3 354.9,355.7 349.7,353.3 356.0,350.2 357.1,348.6 357.4,346.8 354.9,345.0 354.2,341.1 352.8,341.5 353.1,347.4 350.6,345.9 349.2,346.7 349.3,351.8 347.0,353.3 348.8,355.4 353.8,357.6 343.3,357.0 340.4,367.2 337.1,369.6 335.9,372.9 334.6,373.1 329.2,381.3 333.0,378.8 334.9,381.2 332.3,384.6 330.4,400.4 325.4,404.0 322.7,399.8 322.0,402.0 320.1,402.5 323.5,407.9 324.4,414.6 323.2,421.9 317.3,425.6 316.4,431.9 315.5,433.0 314.6,432.4 312.1,436.4 313.0,438.9 317.7,439.5 315.1,437.4 316.4,435.2 318.9,434.2 320.0,438.0 323.4,438.3 324.9,442.6 323.4,445.4 325.0,447.1 324.5,449.2 321.3,450.7 319.6,458.4 318.1,459.6 320.0,463.5 318.4,467.1 321.3,468.1 321.5,469.2 318.7,473.7 320.1,476.9 317.3,475.7 312.9,470.6ZM99.2,175.4 88.1,177.9 86.7,176.5 87.0,170.9 92.7,166.1 93.7,168.8 100.7,173.1 103.3,177.4 100.9,177.2 99.2,175.4ZM76.9,161.9 76.6,153.3 75.1,150.5 75.9,149.2 80.0,148.8 82.1,142.0 82.9,144.5 82.0,152.6 79.6,154.8 78.9,161.3 76.9,161.9ZM86.3,144.9 90.9,142.9 90.3,141.3 92.5,140.2 97.7,142.7 96.2,148.7 91.8,150.0 89.6,149.5 86.3,144.9ZM32.2,83.2 31.0,91.6 28.6,95.6 22.8,100.0 9.6,104.3 7.7,95.9 8.9,96.1 9.6,94.3 9.7,86.9 7.0,84.6 6.0,81.2 7.0,75.3 9.5,70.6 9.9,66.0 8.9,63.6 10.4,61.4 10.4,57.6 15.3,55.9 18.3,53.2 17.8,45.9 18.8,45.0 23.0,45.0 30.4,51.3 32.1,55.8 31.2,64.6 32.1,71.4 29.4,80.6 32.2,83.2ZM340.3,418.2 333.9,417.5 336.4,423.2 330.6,423.8 327.6,425.8 331.6,417.4 329.7,416.9 329.4,413.1 332.0,410.3 335.7,408.2 340.1,409.9 340.8,414.6 342.8,416.6 340.3,418.2ZM360.6,386.8 353.4,382.6 352.2,379.8 355.1,379.9 359.2,382.3 360.6,386.8ZM378.8,185.1 372.5,196.0 370.1,192.9 366.7,191.5 365.9,189.4 365.7,187.9 368.2,186.4 378.8,185.1ZM397.3,180.7 392.8,184.5 392.3,186.8 389.1,185.8 386.3,187.6 386.1,180.1 383.4,179.6 377.4,181.9 374.8,179.3 372.9,180.5 364.8,179.4 358.2,174.5 359.9,170.4 365.5,168.2 373.0,168.7 375.6,171.0 377.4,168.3 383.5,168.2 387.6,165.8 389.4,166.6 392.7,172.2 395.7,174.5 399.7,181.0 398.1,182.2 397.3,180.7ZM348.0,162.9 345.9,160.7 347.5,159.4 351.8,160.1 350.2,163.0 348.0,162.9ZM340.0,137.9 338.9,136.2 340.8,135.0 342.1,130.3 344.5,129.4 344.9,131.0 342.2,137.1 340.0,137.9ZM359.2,138.8 358.3,133.5 353.7,131.4 356.5,125.7 355.2,116.6 350.2,118.1 344.8,113.6 348.5,110.5 354.7,107.9 354.2,105.7 356.7,104.5 355.9,99.9 358.3,101.7 363.9,97.5 379.2,124.1 390.2,128.4 387.2,141.2 381.5,145.4 385.2,146.0 388.3,143.3 389.9,153.7 386.8,150.7 386.0,153.0 389.0,157.0 387.1,158.4 379.6,153.8 376.5,158.5 371.0,160.0 366.9,157.8 364.4,153.9 366.3,151.8 363.0,147.3 362.8,140.4 359.2,138.8Z" fill="var(--chip)" stroke="var(--muted)" stroke-width="2.2" stroke-linejoin="round"/><g transform="rotate(6.4 375.6535612345906 66)" fill="var(--ink)"><line x1="375.6535612345906" y1="66" x2="375.6535612345906" y2="48" stroke="var(--ink)" stroke-width="3.5"/><path d="M368.6535612345906,50L375.6535612345906,40L382.6535612345906,50Z"/><text x="375.6535612345906" y="36" font-size="30" font-weight="700" text-anchor="middle">N</text></g><path d="M14,496.041902622655V503.041902622655H114V496.041902622655" fill="none" stroke="var(--ink)" stroke-width="3.5"/><text x="64" y="491.041902622655" font-size="26" text-anchor="middle" fill="var(--ink)">100 km</text></symbol></svg>
+<main class="detail">
+<p class="crumbs"><a href="../index.html">&larr; All fires</a></p>
+<nav class="pager" aria-label="Other fires"><a href="../mangana-road/index.html">&larr; Newer: Mangana Road fire, 2019</a><a class="older" href="../slatterys-road-2019/index.html">Older: Slatterys Road Electrona fire, 2019 &rarr;</a></nav>
+<div class="head">
+  <div class="head-text">
+    <h1>Jeffreys Track fire, 2019</h1>
+    <p class="when">Ignited 20 Dec 2019, declared out 08 Jan 2020 (deliberate)</p><p class="region">About 19 km north-west of Fern Tree</p>
+  </div>
+  <svg class="inset" viewBox="0 0 405.7 515.0" role="img" aria-label="Locator map of Tasmania: the lines cross at the fire; too small to show its boundary at this scale"><use href="#tas-inset"/><g stroke="#D55E00" stroke-width="2.4" opacity="0.9"><line x1="0" y1="428.6" x2="405.7" y2="428.6"/><line x1="245.1" y1="0" x2="245.1" y2="515.0"/></g></svg>
+</div>
+<div class="stats">
+      <div><b>21 ha</b><span>official area</span></div>
+      <div><b>22%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>0%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+<div class="bar" role="img" aria-label="Severity mix"><i style="width:78.4%;background:var(--sev-un)" title="Unburnt: 78.4%"></i><i style="width:19.1%;background:var(--sev-low)" title="Low: 19.1%"></i><i style="width:2.1%;background:var(--sev-ml)" title="Moderate-low: 2.1%"></i><i style="width:0.4%;background:var(--sev-mh)" title="Moderate-high: 0.4%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
+<div class="legend"><span><i style="background:var(--sev-un)"></i>Unburnt</span><span><i style="background:var(--sev-low)"></i>Low</span><span><i style="background:var(--sev-ml)"></i>Moderate-low</span><span><i style="background:var(--sev-mh)"></i>Moderate-high</span><span><i style="background:var(--sev-hi)"></i>High</span></div>
+<p class="note">Weak or noisy result: 21.6% of the official boundary shows a burn (dNBR &gt;= 0.10), against 15.5% of unburnt land nearby (4.4 ha burnt inside). The fire may not be visible at 20 m.</p><p class="note">Small fire: near the limit of 20 m pixels.</p><p class="note">16% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+<figure><a href="dnbr_severity.png"><img loading="lazy" src="dnbr_severity.png" alt="Burn severity figure for the Jeffreys Track fire"></a><figcaption>Burn severity (dNBR) inside and around the official boundary.</figcaption></figure><figure><a href="before_after.png"><img loading="lazy" src="before_after.png" alt="Before and after figure for the Jeffreys Track fire"></a><figcaption>Images before and after the fire.</figcaption></figure><figure><a href="recovery.png"><img loading="lazy" src="recovery.png" alt="Recovery figure for the Jeffreys Track fire"></a><figcaption>Recovery of the burn ratio since the fire, relative to unburnt land nearby.</figcaption></figure>
+<p><a href="summary.csv">Numbers (CSV)</a></p>
+<nav class="pager" aria-label="Other fires"><a href="../mangana-road/index.html">&larr; Newer: Mangana Road fire, 2019</a><a class="older" href="../slatterys-road-2019/index.html">Older: Slatterys Road Electrona fire, 2019 &rarr;</a></nav>
+<footer>
+<p><b>Not an official resource: exploratory results made with an AI coding agent at a workshop, not checked by a bushfire or fire-ecology expert.</b> <a href="https://www.fire.tas.gov.au/">For official fire information, see the Tasmania Fire Service</a>.</p>
+<p>Data sources and attribution: see the <a href="../index.html">catalog page</a>.</p>
+</footer>
+</main>
+</body>
+</html>

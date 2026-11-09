@@ -1259,9 +1259,19 @@ display:flex;flex-direction:column}
 .card img{width:100%;aspect-ratio:16/10;object-fit:cover;object-position:right center;
 display:block;border-bottom:1px solid var(--line);background:var(--chip)}
 .card .pic{position:relative}
-.inset{position:absolute;top:6px;left:6px;width:96px;height:auto;padding:3px;
-background:var(--card);border:1px solid var(--line);
-border-radius:6px;pointer-events:none}
+.head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.head-text{display:flex;flex-direction:column;gap:8px;min-width:0}
+.head h1{margin:0}
+.crumbs{font-size:.9rem;margin:0 0 8px}
+.pager{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.9rem;
+margin:0 0 16px}
+.pager a.older{margin-left:auto}
+.detail .stats{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin:20px 0 12px}
+.detail .bar{max-width:72ch;margin-bottom:8px}
+.detail .legend{margin-bottom:16px}
+.detail .note{max-width:72ch}
+.inset{flex:none;width:96px;height:auto;padding:3px;background:var(--card);
+border:1px solid var(--line);border-radius:6px}
 .card .body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
 .card h3{margin:0;font-size:1.1rem}
 .when{color:var(--muted);font-size:.9rem;margin:0}
@@ -1377,13 +1387,79 @@ def _inset_svgs(sites: list[str]) -> tuple[str, dict[str, str], float]:
     return symbol, out, INSET_MIN_PX * km_per_px
 
 
+def _detail_pages(pages: dict[str, dict], insets: dict[str, str], inset_symbol: str,
+                  legend: str) -> None:
+    """outputs/tasmania/<site>/index.html: the full-page view of each landing-page card, with
+    the figures inline. Same content as the card, laid out wide."""
+    figures = [("dnbr_severity.png", "Burn severity", "Burn severity (dNBR) inside and around "
+                "the official boundary."),
+               ("before_after.png", "Before and after", "Images before and after the fire."),
+               ("recovery.png", "Recovery", "Recovery of the burn ratio since the fire, relative "
+                "to unburnt land nearby.")]
+    order = sorted(pages, key=lambda s: (pages[s]["r"]["ignition"], s), reverse=True)
+    for i, site in enumerate(order):
+        p = pages[site]
+        name = _esc(p["r"]["fire_name"])
+
+        def _nb(j, arrow_first, word):
+            if not 0 <= j < len(order):
+                return ""
+            q = pages[order[j]]
+            label = f'{_esc(q["r"]["fire_name"])} fire, {q["year"]}'
+            text = f"&larr; {word}: {label}" if arrow_first else f"{word}: {label} &rarr;"
+            cls = "" if arrow_first else ' class="older"'
+            return f'<a{cls} href="../{_esc(order[j])}/index.html">{text}</a>'
+        # Catalog order is most recent first, so "newer" is the previous entry
+        nav = (f'<nav class="pager" aria-label="Other fires">{_nb(i - 1, True, "Newer")}'
+               f'{_nb(i + 1, False, "Older")}</nav>')
+        figs = "".join(f'<figure><a href="{f}"><img loading="lazy" src="{f}" '
+                       f'alt="{label} figure for the {name} fire"></a>'
+                       f'<figcaption>{cap}</figcaption></figure>' for f, label, cap in figures)
+        page = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{name} fire, {p['year']}: Tasmanian Bushfires from Sentinel-2</title>
+<style>{LANDING_CSS}</style>
+</head>
+<body>
+{inset_symbol}
+<main class="detail">
+<p class="crumbs"><a href="../index.html">&larr; All fires</a></p>
+{nav}
+<div class="head">
+  <div class="head-text">
+    <h1>{name} fire, {p['year']}</h1>
+    {p['when']}
+  </div>
+  {insets[site]}
+</div>
+{p['stats']}
+{p['bar']}
+<div class="legend">{legend}</div>
+{p['notes']}
+{figs}
+<p><a href="summary.csv">Numbers (CSV)</a></p>
+{nav}
+<footer>
+<p><b>{_esc(DISCLAIMER)}</b> <a href="{TFS_URL}">{_esc(DISCLAIMER_OFFICIAL[:-1])}</a>.</p>
+<p>Data sources and attribution: see the <a href="../index.html">catalog page</a>.</p>
+</footer>
+</main>
+</body>
+</html>
+"""
+        (OUTPUTS / site / "index.html").write_text(page)
+
+
 def _landing_page(groups: dict[str, list[dict]]) -> None:
     """outputs/tasmania/index.html: a static landing page for GitHub Pages (no external assets),
     with one tab per site group (CSS only: radio buttons, no scripts)."""
     sev_vars = ["--sev-un", "--sev-low", "--sev-ml", "--sev-mh", "--sev-hi"]
     summaries = list({r["site"]: r for rows in groups.values() for r in rows}.values())
     inset_symbol, insets, inset_min_km = _inset_svgs([r["site"] for r in summaries])
-    card_html = {}
+    card_html, detail_pages = {}, {}
     for r in summaries:
         site = r["site"]
         ign = dt.date.fromisoformat(r["ignition"])
@@ -1429,23 +1505,35 @@ def _landing_page(groups: dict[str, list[dict]]) -> None:
                          f"of unburnt land nearby ({float(r['burnt_inside_ha']):.1f} ha burnt "
                          "inside). The fire may not be visible at 20 m.")
         note_html = "".join(f'<p class="note">{_esc(n)}</p>' for n in notes)
-        card_html[site] = (f"""
-<article class="card">
-  <div class="pic"><a href="{_esc(site)}/dnbr_severity.png"><img loading="lazy" src="{_esc(site)}/dnbr_severity.png"
-     alt="Burn severity map of the {_esc(r['fire_name'])} fire"></a>{insets[site]}</div>
-  <div class="body">
-    <h3>{_esc(r['fire_name'])} fire, {ign.year}</h3>
-    <p class="when">Ignited {ign:%d %b %Y}, declared out {out:%d %b %Y} ({_esc(str(r['cause']).lower())})</p>
-    <p class="region">{_esc(r['region'])}</p>
-    <div class="stats">
+        when_html = (f'<p class="when">Ignited {ign:%d %b %Y}, declared out {out:%d %b %Y} '
+                     f'({_esc(str(r["cause"]).lower())})</p>'
+                     f'<p class="region">{_esc(r["region"])}</p>')
+        stats_html = f"""<div class="stats">
       <div><b>{_num(r['official_area_ha'])} ha</b><span>official area</span></div>
       <div><b>{_num(r['burnt_inside_pct'], '{:.0f}', '%')}</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
       <div><b>{hi:.0f}%</b><span>moderate-high or high severity</span></div>
       <div><b>{rec_txt}</b><span>{_esc(rec_lab)}</span></div>
+    </div>"""
+        bar_html = f'<div class="bar" role="img" aria-label="Severity mix">{bar}</div>'
+        detail_pages[site] = dict(r=r, year=ign.year, when=when_html, stats=stats_html,
+                                  bar=bar_html, notes=note_html)
+        card_html[site] = (f"""
+<article class="card">
+  <div class="pic"><a href="{_esc(site)}/dnbr_severity.png"><img loading="lazy" src="{_esc(site)}/dnbr_severity.png"
+     alt="Burn severity map of the {_esc(r['fire_name'])} fire"></a></div>
+  <div class="body">
+    <div class="head">
+      <div class="head-text">
+        <h3>{_esc(r['fire_name'])} fire, {ign.year}</h3>
+        {when_html}
+      </div>
+      {insets[site]}
     </div>
-    <div class="bar" role="img" aria-label="Severity mix">{bar}</div>
+    {stats_html}
+    {bar_html}
     {note_html}
     <div class="figlinks">
+      <a href="{_esc(site)}/index.html"><b>Full page</b></a>
       <a href="{_esc(site)}/before_after.png">Before and after</a>
       <a href="{_esc(site)}/dnbr_severity.png">Severity</a>
       <a href="{_esc(site)}/recovery.png">Recovery</a>
@@ -1455,6 +1543,7 @@ def _landing_page(groups: dict[str, list[dict]]) -> None:
 </article>""")
     legend = "".join(f'<span><i style="background:var({v})"></i>{n}</span>'
                      for (n, _, _), v in zip(SEVERITY, sev_vars))
+    _detail_pages(detail_pages, insets, inset_symbol, legend)
     inputs, labels, panels = [], [], []
     for i, (g, rows) in enumerate(groups.items()):
         tab, heading, blurb, fig = GROUPS[g]
@@ -1473,7 +1562,7 @@ def _landing_page(groups: dict[str, list[dict]]) -> None:
 <h3 class="sub">The fires, most recent first</h3>
 <p class="note">{_esc(DISCLAIMER)}</p>
 <div class="legend">{legend}</div>
-<p class="when">Inset on each map: all of Tasmania at the same scale; the orange lines cross at
+<p class="when">Inset on each card: all of Tasmania at the same scale; the orange lines cross at
 the fire, and the fire's official boundary is filled in the maps' boundary blue when it is big
 enough to see (about {inset_min_km:.0f} km across or more).</p>
 <div class="grid">{cards}
@@ -1561,6 +1650,7 @@ def _folium_map(summaries: list[dict], colours: dict) -> None:
                 f"{r['burnt_inside_pct']}%<br>High {r['pct_high']}%, moderate-high "
                 f"{r['pct_moderate-high']}%<br>"
                 f"High-severity recovery to {r['latest_summer']}: {r['recovered_high_pct']}%<br>"
+                f"<a href='{site}/index.html' target='_blank'><b>full page</b></a> | "
                 f"<a href='{site}/before_after.png' target='_blank'>before/after</a> | "
                 f"<a href='{site}/dnbr_severity.png' target='_blank'>severity</a> | "
                 f"<a href='{site}/recovery.png' target='_blank'>recovery</a>"

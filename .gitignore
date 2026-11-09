@@ -5,3 +5,5 @@ __pycache__/
 .ruff_cache/
 # Satellite images downloaded for your own questions (WORKBOOK Step 8): not committed
 downloads/
+.Rproj.user
+*.Rproj
