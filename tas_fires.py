@@ -1108,6 +1108,11 @@ def _landing_page(summaries: list[dict]) -> None:
                          "images just before it.")
         if float(r["official_area_ha"]) < 1000:
             notes.append("Small fire: near the limit of 20 m pixels.")
+        false_pct = 100 * float(r["burnt_outside_ha"]) / max(float(r["control_ha"]), 1)
+        if false_pct > 8:
+            notes.append(f"{false_pct:.0f}% of unburnt land nearby also shows a burn-like drop "
+                         "(clearing, development, harvesting or drying): read low severity with "
+                         "caution.")
         note_html = "".join(f'<p class="note">{_esc(n)}</p>' for n in notes)
         cards.append(f"""
 <article class="card" id="{_esc(site)}">
