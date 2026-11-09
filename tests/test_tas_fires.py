@@ -146,3 +146,10 @@ def test_composite_round_trip(tmp_path):
     ds = tf._gdal().Open(str(path))
     assert ds.GetGeoTransform() == g.geotransform
     assert ds.GetSpatialRef().GetAuthorityCode(None) == "3577"
+
+
+def test_region_of():
+    assert tf.region_of(148.0, -40.0) == "Bass Strait islands"     # Flinders Island
+    assert tf.region_of(147.3, -42.9) == "South / Hobart"
+    assert tf.region_of(146.6, -41.9) == "Central Plateau"
+    assert tf.region_of(146.2, -42.6) == "South-west"

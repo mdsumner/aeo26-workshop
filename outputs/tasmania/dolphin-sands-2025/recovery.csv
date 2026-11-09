@@ -1,0 +1,2 @@
+site,summer,years_since,dates,control_drop,control_ndvi,deficit_unburnt,ndvi_unburnt,deficit_low,ndvi_low,deficit_moderate-low,ndvi_moderate-low,deficit_moderate-high,ndvi_moderate-high,deficit_high,ndvi_high
+dolphin-sands-2025,2026,1,2025-12-29;2026-02-17;2026-02-27;2026-03-14;2026-03-31;2026-04-03,0.0738,0.4352,0.0217,0.4568,0.1909,0.3449,0.3465,0.263,0.4855,0.2427,0.6966,0.2894

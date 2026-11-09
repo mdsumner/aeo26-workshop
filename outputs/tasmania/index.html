@@ -64,7 +64,7 @@ padding-top:16px}
 <body>
 <main>
 <h1>Tasmanian bushfires from Sentinel-2</h1>
-<p class="lede">Where 25 Tasmanian bushfires burnt, how severely, and how fast the
+<p class="lede">Where 33 Tasmanian bushfires burnt, how severely, and how fast the
 vegetation is recovering, measured from free Sentinel-2 satellite images and checked against the
 State's official fire boundaries.</p>
 <div class="links">
@@ -74,7 +74,7 @@ State's official fire boundaries.</p>
 <div class="tabs">
 <input type="radio" name="tab" id="tab-tasmania" checked>
 <input type="radio" name="tab" id="tab-fern-tree">
-<div class="tablist" role="tablist"><label for="tab-tasmania" role="tab">Major fires (9)</label><label for="tab-fern-tree" role="tab">Near Fern Tree (19)</label></div>
+<div class="tablist" role="tablist"><label for="tab-tasmania" role="tab">Major fires (17)</label><label for="tab-fern-tree" role="tab">Near Fern Tree (19)</label></div>
 <section class="panel" id="panel-tasmania">
 <h2>Recent Tasmanian bushfires: large and significant fires across the state</h2>
 <figure>
@@ -86,6 +86,75 @@ State's official fire boundaries.</p>
 <h3 class="sub">The fires, most recent first</h3>
 <div class="legend"><span><i style="background:var(--sev-un)"></i>Unburnt</span><span><i style="background:var(--sev-low)"></i>Low</span><span><i style="background:var(--sev-ml)"></i>Moderate-low</span><span><i style="background:var(--sev-mh)"></i>Moderate-high</span><span><i style="background:var(--sev-hi)"></i>High</span></div>
 <div class="grid">
+<article class="card">
+  <a href="mcneills-road-2026/dnbr_severity.png"><img loading="lazy" src="mcneills-road-2026/dnbr_severity.png"
+     alt="Burn severity map of the Mcneills Road fire"></a>
+  <div class="body">
+    <h3>Mcneills Road fire, 2026</h3>
+    <p class="when">Ignited 23 Apr 2026, declared out 05 May 2026 (undetermined)</p>
+    <p class="region">Near Swansea on the east coast, next to Dolphin Sands: autumn 2026</p>
+    <div class="stats">
+      <div><b>1,064 ha</b><span>official area</span></div>
+      <div><b>46%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>5%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>too soon to measure recovery</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:54.2%;background:var(--sev-un)" title="Unburnt: 54.2%"></i><i style="width:30.3%;background:var(--sev-low)" title="Low: 30.3%"></i><i style="width:10.5%;background:var(--sev-ml)" title="Moderate-low: 10.5%"></i><i style="width:3.8%;background:var(--sev-mh)" title="Moderate-high: 3.8%"></i><i style="width:1.2%;background:var(--sev-hi)" title="High: 1.2%"></i></div>
+    <p class="note">Initial assessment from images just after the fire: no full summer has passed yet, so seasonal drying adds some false low severity.</p><p class="note">9% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="mcneills-road-2026/before_after.png">Before and after</a>
+      <a href="mcneills-road-2026/dnbr_severity.png">Severity</a>
+      <a href="mcneills-road-2026/recovery.png">Recovery</a>
+      <a href="mcneills-road-2026/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="tasman-highway-2025/dnbr_severity.png"><img loading="lazy" src="tasman-highway-2025/dnbr_severity.png"
+     alt="Burn severity map of the Tasman Highway fire"></a>
+  <div class="body">
+    <h3>Tasman Highway fire, 2025</h3>
+    <p class="when">Ignited 09 Dec 2025, declared out 18 Dec 2025 (undetermined)</p>
+    <p class="region">North-east Tasmania: the largest fire of December 2025</p>
+    <div class="stats">
+      <div><b>1,170 ha</b><span>official area</span></div>
+      <div><b>94%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>34%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>too soon to measure recovery</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:5.7%;background:var(--sev-un)" title="Unburnt: 5.7%"></i><i style="width:26.2%;background:var(--sev-low)" title="Low: 26.2%"></i><i style="width:33.6%;background:var(--sev-ml)" title="Moderate-low: 33.6%"></i><i style="width:28.1%;background:var(--sev-mh)" title="Moderate-high: 28.1%"></i><i style="width:6.4%;background:var(--sev-hi)" title="High: 6.4%"></i></div>
+    <p class="note">Initial assessment from images just after the fire: no full summer has passed yet, so seasonal drying adds some false low severity.</p><p class="note">11% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="tasman-highway-2025/before_after.png">Before and after</a>
+      <a href="tasman-highway-2025/dnbr_severity.png">Severity</a>
+      <a href="tasman-highway-2025/recovery.png">Recovery</a>
+      <a href="tasman-highway-2025/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="dolphin-sands-2025/dnbr_severity.png"><img loading="lazy" src="dolphin-sands-2025/dnbr_severity.png"
+     alt="Burn severity map of the Dolphin Sands Road fire"></a>
+  <div class="body">
+    <h3>Dolphin Sands Road fire, 2025</h3>
+    <p class="when">Ignited 04 Dec 2025, declared out 18 Dec 2025 (undetermined)</p>
+    <p class="region">Dolphin Sands, near Swansea on the east coast: coastal settlement and bushland</p>
+    <div class="stats">
+      <div><b>691 ha</b><span>official area</span></div>
+      <div><b>83%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>9%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>too soon to measure recovery</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:17.2%;background:var(--sev-un)" title="Unburnt: 17.2%"></i><i style="width:35.3%;background:var(--sev-low)" title="Low: 35.3%"></i><i style="width:38.2%;background:var(--sev-ml)" title="Moderate-low: 38.2%"></i><i style="width:9.0%;background:var(--sev-mh)" title="Moderate-high: 9.0%"></i><i style="width:0.4%;background:var(--sev-hi)" title="High: 0.4%"></i></div>
+    <p class="note">Initial assessment from images just after the fire: no full summer has passed yet, so seasonal drying adds some false low severity.</p><p class="note">Small fire: near the limit of 20 m pixels.</p><p class="note">27% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="dolphin-sands-2025/before_after.png">Before and after</a>
+      <a href="dolphin-sands-2025/dnbr_severity.png">Severity</a>
+      <a href="dolphin-sands-2025/recovery.png">Recovery</a>
+      <a href="dolphin-sands-2025/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
 <article class="card">
   <a href="glenlusk/dnbr_severity.png"><img loading="lazy" src="glenlusk/dnbr_severity.png"
      alt="Burn severity map of the Molesworth Road fire"></a>
@@ -106,6 +175,52 @@ State's official fire boundaries.</p>
       <a href="glenlusk/dnbr_severity.png">Severity</a>
       <a href="glenlusk/recovery.png">Recovery</a>
       <a href="glenlusk/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="nelsons-tier/dnbr_severity.png"><img loading="lazy" src="nelsons-tier/dnbr_severity.png"
+     alt="Burn severity map of the Nelsons Tier fire"></a>
+  <div class="body">
+    <h3>Nelsons Tier fire, 2025</h3>
+    <p class="when">Ignited 19 Oct 2025, declared out 06 Nov 2025 (undetermined)</p>
+    <p class="region">About 40 km north-east of Hobart: the largest fire near Hobart in 2025-26</p>
+    <div class="stats">
+      <div><b>1,286 ha</b><span>official area</span></div>
+      <div><b>79%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>5%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>only one summer since the fire so far</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:21.1%;background:var(--sev-un)" title="Unburnt: 21.1%"></i><i style="width:46.9%;background:var(--sev-low)" title="Low: 46.9%"></i><i style="width:26.8%;background:var(--sev-ml)" title="Moderate-low: 26.8%"></i><i style="width:5.0%;background:var(--sev-mh)" title="Moderate-high: 5.0%"></i><i style="width:0.1%;background:var(--sev-hi)" title="High: 0.1%"></i></div>
+    
+    <div class="figlinks">
+      <a href="nelsons-tier/before_after.png">Before and after</a>
+      <a href="nelsons-tier/dnbr_severity.png">Severity</a>
+      <a href="nelsons-tier/recovery.png">Recovery</a>
+      <a href="nelsons-tier/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="labillardiere-peninsula/dnbr_severity.png"><img loading="lazy" src="labillardiere-peninsula/dnbr_severity.png"
+     alt="Burn severity map of the Labillardiere Peninsula fire"></a>
+  <div class="body">
+    <h3>Labillardiere Peninsula fire, 2025</h3>
+    <p class="when">Ignited 02 Oct 2025, declared out 20 Nov 2025 (deliberate)</p>
+    <p class="region">Labillardiere Peninsula, South Bruny National Park, Bruny Island</p>
+    <div class="stats">
+      <div><b>825 ha</b><span>official area</span></div>
+      <div><b>91%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>34%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>only one summer since the fire so far</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:9.2%;background:var(--sev-un)" title="Unburnt: 9.2%"></i><i style="width:27.0%;background:var(--sev-low)" title="Low: 27.0%"></i><i style="width:30.1%;background:var(--sev-ml)" title="Moderate-low: 30.1%"></i><i style="width:18.9%;background:var(--sev-mh)" title="Moderate-high: 18.9%"></i><i style="width:14.8%;background:var(--sev-hi)" title="High: 14.8%"></i></div>
+    <p class="note">Small fire: near the limit of 20 m pixels.</p>
+    <div class="figlinks">
+      <a href="labillardiere-peninsula/before_after.png">Before and after</a>
+      <a href="labillardiere-peninsula/dnbr_severity.png">Severity</a>
+      <a href="labillardiere-peninsula/recovery.png">Recovery</a>
+      <a href="labillardiere-peninsula/summary.csv">Numbers (CSV)</a>
     </div>
   </div>
 </article>
@@ -156,6 +271,29 @@ State's official fire boundaries.</p>
   </div>
 </article>
 <article class="card">
+  <a href="dolphin-sands-2023/dnbr_severity.png"><img loading="lazy" src="dolphin-sands-2023/dnbr_severity.png"
+     alt="Burn severity map of the Dolphin Sands Road fire"></a>
+  <div class="body">
+    <h3>Dolphin Sands Road fire, 2023</h3>
+    <p class="when">Ignited 12 Nov 2023, declared out 19 Nov 2023 (undetermined)</p>
+    <p class="region">Dolphin Sands, near Swansea: the same stretch, burnt two years earlier</p>
+    <div class="stats">
+      <div><b>250 ha</b><span>official area</span></div>
+      <div><b>96%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>48%</b><span>moderate-high or high severity</span></div>
+      <div><b>41%</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:3.9%;background:var(--sev-un)" title="Unburnt: 3.9%"></i><i style="width:18.1%;background:var(--sev-low)" title="Low: 18.1%"></i><i style="width:29.4%;background:var(--sev-ml)" title="Moderate-low: 29.4%"></i><i style="width:36.5%;background:var(--sev-mh)" title="Moderate-high: 36.5%"></i><i style="width:12.0%;background:var(--sev-hi)" title="High: 12.0%"></i></div>
+    <p class="note">Small fire: near the limit of 20 m pixels.</p><p class="note">10% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="dolphin-sands-2023/before_after.png">Before and after</a>
+      <a href="dolphin-sands-2023/dnbr_severity.png">Severity</a>
+      <a href="dolphin-sands-2023/recovery.png">Recovery</a>
+      <a href="dolphin-sands-2023/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
   <a href="mangana-road/dnbr_severity.png"><img loading="lazy" src="mangana-road/dnbr_severity.png"
      alt="Burn severity map of the Mangana Road fire"></a>
   <div class="body">
@@ -175,6 +313,29 @@ State's official fire boundaries.</p>
       <a href="mangana-road/dnbr_severity.png">Severity</a>
       <a href="mangana-road/recovery.png">Recovery</a>
       <a href="mangana-road/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
+  <a href="pelham-road/dnbr_severity.png"><img loading="lazy" src="pelham-road/dnbr_severity.png"
+     alt="Burn severity map of the Pelham Road fire"></a>
+  <div class="body">
+    <h3>Pelham Road fire, 2019</h3>
+    <p class="when">Ignited 30 Dec 2019, declared out 03 Feb 2020 (natural)</p>
+    <p class="region">About 40 km north of Hobart near Pelham: lightning-caused, summer 2019-20</p>
+    <div class="stats">
+      <div><b>2,115 ha</b><span>official area</span></div>
+      <div><b>55%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>2%</b><span>moderate-high or high severity</span></div>
+      <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:45.2%;background:var(--sev-un)" title="Unburnt: 45.2%"></i><i style="width:39.7%;background:var(--sev-low)" title="Low: 39.7%"></i><i style="width:13.0%;background:var(--sev-ml)" title="Moderate-low: 13.0%"></i><i style="width:2.0%;background:var(--sev-mh)" title="Moderate-high: 2.0%"></i><i style="width:0.1%;background:var(--sev-hi)" title="High: 0.1%"></i></div>
+    <p class="note">21% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="pelham-road/before_after.png">Before and after</a>
+      <a href="pelham-road/dnbr_severity.png">Severity</a>
+      <a href="pelham-road/recovery.png">Recovery</a>
+      <a href="pelham-road/summary.csv">Numbers (CSV)</a>
     </div>
   </div>
 </article>
@@ -271,6 +432,29 @@ State's official fire boundaries.</p>
   </div>
 </article>
 <article class="card">
+  <a href="thunder-and-lightning-bay/dnbr_severity.png"><img loading="lazy" src="thunder-and-lightning-bay/dnbr_severity.png"
+     alt="Burn severity map of the Thunder And Lightning Bay fire"></a>
+  <div class="body">
+    <h3>Thunder And Lightning Bay fire, 2016</h3>
+    <p class="when">Ignited 04 Dec 2016, declared out 19 Dec 2016 (accidental)</p>
+    <p class="region">Flinders Island, Bass Strait</p>
+    <div class="stats">
+      <div><b>31,770 ha</b><span>official area</span></div>
+      <div><b>89%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
+      <div><b>9%</b><span>moderate-high or high severity</span></div>
+      <div><b>77%</b><span>high-severity recovery by summer 2025-26</span></div>
+    </div>
+    <div class="bar" role="img" aria-label="Severity mix"><i style="width:10.7%;background:var(--sev-un)" title="Unburnt: 10.7%"></i><i style="width:37.0%;background:var(--sev-low)" title="Low: 37.0%"></i><i style="width:43.7%;background:var(--sev-ml)" title="Moderate-low: 43.7%"></i><i style="width:8.3%;background:var(--sev-mh)" title="Moderate-high: 8.3%"></i><i style="width:0.3%;background:var(--sev-hi)" title="High: 0.3%"></i></div>
+    <p class="note">Baseline is the images just before the fire (summer 2015-16 too cloudy), not the summer before, so seasonal change may add some false low severity.</p><p class="note">13% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <div class="figlinks">
+      <a href="thunder-and-lightning-bay/before_after.png">Before and after</a>
+      <a href="thunder-and-lightning-bay/dnbr_severity.png">Severity</a>
+      <a href="thunder-and-lightning-bay/recovery.png">Recovery</a>
+      <a href="thunder-and-lightning-bay/summary.csv">Numbers (CSV)</a>
+    </div>
+  </div>
+</article>
+<article class="card">
   <a href="lake-mackenzie/dnbr_severity.png"><img loading="lazy" src="lake-mackenzie/dnbr_severity.png"
      alt="Burn severity map of the Lake Mackenzie Road fire"></a>
   <div class="body">
@@ -284,7 +468,7 @@ State's official fire boundaries.</p>
       <div><b>82%</b><span>high-severity recovery by summer 2025-26</span></div>
     </div>
     <div class="bar" role="img" aria-label="Severity mix"><i style="width:21.3%;background:var(--sev-un)" title="Unburnt: 21.3%"></i><i style="width:23.1%;background:var(--sev-low)" title="Low: 23.1%"></i><i style="width:22.0%;background:var(--sev-ml)" title="Moderate-low: 22.0%"></i><i style="width:22.8%;background:var(--sev-mh)" title="Moderate-high: 22.8%"></i><i style="width:10.9%;background:var(--sev-hi)" title="High: 10.9%"></i></div>
-    <p class="note">No Sentinel-2 summer before this fire: the baseline is the spring images just before it.</p>
+    <p class="note">Baseline is the images just before the fire (no earlier summer available), not the summer before, so seasonal change may add some false low severity.</p>
     <div class="figlinks">
       <a href="lake-mackenzie/before_after.png">Before and after</a>
       <a href="lake-mackenzie/dnbr_severity.png">Severity</a>
@@ -435,7 +619,7 @@ State's official fire boundaries.</p>
       <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
     </div>
     <div class="bar" role="img" aria-label="Severity mix"><i style="width:94.6%;background:var(--sev-un)" title="Unburnt: 94.6%"></i><i style="width:5.4%;background:var(--sev-low)" title="Low: 5.4%"></i><i style="width:0.0%;background:var(--sev-ml)" title="Moderate-low: 0.0%"></i><i style="width:0.0%;background:var(--sev-mh)" title="Moderate-high: 0.0%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
-    <p class="note">No Sentinel-2 summer before this fire: the baseline is the spring images just before it.</p><p class="note">Very small fire: 2.4 ha is only about 60 pixels of 20 m, so the severity and recovery numbers are indicative only.</p>
+    <p class="note">Baseline is the images just before the fire (no earlier summer available), not the summer before, so seasonal change may add some false low severity.</p><p class="note">Very small fire: 2.4 ha is only about 60 pixels of 20 m, so the severity and recovery numbers are indicative only.</p>
     <div class="figlinks">
       <a href="channel-highway-2024/before_after.png">Before and after</a>
       <a href="channel-highway-2024/dnbr_severity.png">Severity</a>
@@ -734,7 +918,7 @@ State's official fire boundaries.</p>
       <div><b>n/a</b><span>high-severity recovery by summer 2025-26</span></div>
     </div>
     <div class="bar" role="img" aria-label="Severity mix"><i style="width:22.2%;background:var(--sev-un)" title="Unburnt: 22.2%"></i><i style="width:77.8%;background:var(--sev-low)" title="Low: 77.8%"></i><i style="width:0.0%;background:var(--sev-ml)" title="Moderate-low: 0.0%"></i><i style="width:0.0%;background:var(--sev-mh)" title="Moderate-high: 0.0%"></i><i style="width:0.0%;background:var(--sev-hi)" title="High: 0.0%"></i></div>
-    <p class="note">No Sentinel-2 summer before this fire: the baseline is the spring images just before it.</p><p class="note">Very small fire: 7.2 ha is only about 180 pixels of 20 m, so the severity and recovery numbers are indicative only.</p><p class="note">19% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
+    <p class="note">Baseline is the images just before the fire (no earlier summer available), not the summer before, so seasonal change may add some false low severity.</p><p class="note">Very small fire: 7.2 ha is only about 180 pixels of 20 m, so the severity and recovery numbers are indicative only.</p><p class="note">19% of unburnt land nearby also shows a burn-like drop (clearing, development, harvesting or drying): read low severity with caution.</p>
     <div class="figlinks">
       <a href="turn-creek-road-2016/before_after.png">Before and after</a>
       <a href="turn-creek-road-2016/dnbr_severity.png">Severity</a>

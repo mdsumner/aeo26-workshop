@@ -42,6 +42,7 @@ Other ways to choose a fire:
 | `python tas_fires.py --group fern-tree` | Every built-in site in a group (`tasmania` or `fern-tree`), then the overview |
 | `python tas_fires.py --all` | Every built-in site, then the overview |
 | `python tas_fires.py --overview` | Rebuild the overview and interactive map from finished sites |
+| `python tas_fires.py --candidates` | Triage every other bushfire since 2015-16 (100 ha or more) into `outputs/tasmania/candidates.csv`: region, distance from Fern Tree, which baseline and assessment it would get, and pixel count |
 
 The first run of a site downloads about 0.5-2 GB of image pieces and takes about 10-30 minutes.
 Composites are cached in `downloads/tasmania/<site>/` (not committed), so later runs are fast.
@@ -64,8 +65,16 @@ and `tas_fires.R` both read. To add a site, add a row. Each group is a tab on th
 | `proctors-road` | Proctors Road | Oct 2017 | 226 ha | Hobart's southern hills, about 3.5 km from Fern Tree |
 | `margate-plain` | Margate Plain | Jan 2025 | 484 ha | Hills west of Margate, south of Hobart |
 | `glenlusk` | Molesworth Road | Dec 2025 | 36 ha | Glenlusk, north-west of Hobart near Molesworth |
+| `nelsons-tier` | Nelsons Tier | Oct 2025 | 1,286 ha | About 40 km north-east of Hobart |
+| `labillardiere-peninsula` | Labillardiere Peninsula | Oct 2025 | 825 ha | South Bruny National Park, Bruny Island |
+| `pelham-road` | Pelham Road | Dec 2019 | 2,115 ha | About 40 km north of Hobart near Pelham (lightning) |
+| `thunder-and-lightning-bay` | Thunder And Lightning Bay | Dec 2016 | 31,770 ha | Flinders Island, Bass Strait |
+| `dolphin-sands-2025` | Dolphin Sands Road | Dec 2025 | 691 ha | Dolphin Sands near Swansea, east coast (initial assessment) |
+| `dolphin-sands-2023` | Dolphin Sands Road | Nov 2023 | 250 ha | The same spit, 5 km further east (no overlap with 2025) |
+| `mcneills-road-2026` | Mcneills Road | Apr 2026 | 1,064 ha | Next to Dolphin Sands, autumn 2026 (initial; winter after-images) |
+| `tasman-highway-2025` | Tasman Highway | Dec 2025 | 1,170 ha | North-east: the largest fire of December 2025 (initial assessment) |
 
-The first six are among the largest bushfires since Sentinel-2 began (2015-16), and they cover
+The last four were picked with `--candidates` (see below). The first six are among the largest bushfires since Sentinel-2 began (2015-16), and they cover
 the main Tasmanian landscapes. The last three are small fires on Hobart's urban edge. They are at
 the limit of what 20 m pixels can show (36 ha is about 900 pixels), but they are the fires closest
 to home. `glenlusk` was declared out in December 2025, so it has no full summer since the fire yet.
@@ -166,6 +175,8 @@ so the pages work on GitHub Pages (`/outputs/tasmania/`) or from a local copy of
 - `fmask` misses some thin cloud, haze and smoke. These lower NBR, so they can show up as false
   "low" severity outside the boundary (for example, the pale patches south of the Riveaux Road
   fire in summer 2019-20). Forestry clearfelling and planned burns also look like burns from space.
+- Coastal sites: coverage is measured over land only. A pixel that fmask labels water on any date
+  is treated as sea.
 - Cloud is common in western Tasmania. Check the dates and the % covered in `summary.csv`, and the
   white (no data) areas in the figures.
 
