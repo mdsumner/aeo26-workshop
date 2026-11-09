@@ -116,6 +116,16 @@ SITES = {
         fire_id=14017,
         region="West coast near Corinna and the Pieman River (takayna/Tarkine): buttongrass, "
                "scrub and rainforest"),
+    # Hobart district: small fires at the urban edge
+    "glenlusk": dict(
+        fire_id=14725,
+        region="Glenlusk, north-west of Hobart near Molesworth: bushland at the urban edge"),
+    "proctors-road": dict(
+        fire_id=9082,
+        region="Hobart's southern hills, about 3.5 km from Fern Tree: bushland at the urban edge"),
+    "margate-plain": dict(
+        fire_id=14005,
+        region="Hills west of Margate, south of Hobart: bushland and forest"),
 }
 
 ATTRIBUTION = ("Sentinel-2: Digital Earth Australia ARD (Geoscience Australia, CC BY 4.0; contains "
@@ -185,6 +195,14 @@ def first_summer_after(end: dt.date) -> int:
 def latest_summer(today: dt.date) -> int:
     """Most recent summer that has finished by `today`."""
     return today.year if today >= dt.date(today.year, 4, 1) else today.year - 1
+
+
+def pre_summer_year(ignition: dt.date) -> int:
+    """Last full summer (1 Dec - 31 Mar) that ended before the fire started."""
+    year = ignition.year
+    while summer_window(year)[1] >= ignition:
+        year -= 1
+    return year
 
 
 def true_north_angle(x: float, y: float) -> float:
@@ -285,7 +303,7 @@ FIRE_FIELDS = "FIRE_ID,FIRE_NAME,FIRE_AR_HA,IGN_DATE,INCD_END,IGN_SEASON,IGN_CAU
 
 def _fire_record(attrs: dict) -> dict:
     return dict(
-        fire_id=attrs["FIRE_ID"], name=attrs["FIRE_NAME"], area_ha=attrs["FIRE_AR_HA"],
+        fire_id=attrs["FIRE_ID"], name=(attrs["FIRE_NAME"] or "").strip(), area_ha=attrs["FIRE_AR_HA"],
         ignition=_ms_to_date(attrs["IGN_DATE"]), end=_ms_to_date(attrs.get("INCD_END")),
         season=int(attrs["IGN_SEASON"]) if attrs.get("IGN_SEASON") else None,
         cause=attrs.get("IGN_CAUSE1"), fire_type=attrs.get("FIRE_TYPE"))
@@ -614,15 +632,37 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
     if pre is None or pre_m.get("valid_fraction", 0) < 0.6:
         s, e = pre_window(rec["ignition"], days=365)
         pre, pre_m = composite(site_dir, "pre365", bbox_ll, s, e, grid, max_dates, refresh=refresh)
+    # Severity baseline: the last full summer before the fire, so before and after are compared in
+    # the same season (spring-to-summer drying of grass and crops otherwise looks like a burn).
+    py = pre_summer_year(rec["ignition"])
+    base, base_m = None, {}
+    if summer_window(py)[0] >= dt.date(2015, 7, 1):        # Sentinel-2 data in Tasmania
+        s, e = summer_window(py)
+        base, base_m = composite(site_dir, f"presummer{py}", bbox_ll, s, e, grid, max_dates,
+                                 refresh=refresh)
+    if base is None or base_m.get("valid_fraction", 0) < 0.8:
+        base, base_m = pre, pre_m
+        base_name = f"just before the fire ({pre_m['dates'][0][:4]}; no earlier summer available)"
+    else:
+        base_name = f"summer {py - 1}-{str(py)[2:]}"
     s, e = immediate_window(end)
     imm, imm_m = composite(site_dir, "immediate", bbox_ll, s, e, grid, max_dates, refresh=refresh)
     first = first_summer_after(end)
     last = latest_summer(today)
-    if first > last:
-        raise SystemExit(f"No full summer since the fire was out ({end}); try again after March "
-                         f"{first}")
-    s, e = summer_window(first)
-    s1, s1_m = composite(site_dir, f"summer{first}", bbox_ll, s, e, grid, max_dates, refresh=refresh)
+    initial = first > last     # no full summer since the fire was out: initial assessment
+    if initial:
+        if imm is None:
+            raise SystemExit("No clear imagery yet from after the fire")
+        s1, s1_m = imm, imm_m
+        nxt = end + dt.timedelta(days=1)
+        first = nxt.year + (1 if nxt.month == 12 else 0)
+        sev_name = "just after the fire (initial assessment)"
+        print(f"  no full summer since the fire was out: severity from the images just after it")
+    else:
+        s, e = summer_window(first)
+        s1, s1_m = composite(site_dir, f"summer{first}", bbox_ll, s, e, grid, max_dates,
+                             refresh=refresh)
+        sev_name = f"summer {first - 1}-{str(first)[2:]}"
     if pre is None or s1 is None:
         raise SystemExit("Not enough clear imagery before the fire or in the first summer after it")
     summers = {first: (s1, s1_m, grid)}
@@ -640,7 +680,7 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
     burnt_any = rasterize(others + [geom.buffer(500)], grid)
     control = ~burnt_any
 
-    nbr_pre, nbr_s1 = nbr(pre), nbr(s1)
+    nbr_pre, nbr_s1 = nbr(base), nbr(s1)
     dnbr_raw = nbr_pre - nbr_s1
     ok_ctrl = control & np.isfinite(dnbr_raw)
     offset = float(np.nanmedian(dnbr_raw[ok_ctrl])) if ok_ctrl.sum() > 1000 else 0.0
@@ -660,7 +700,9 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
         burnt_inside_pct=round(100 * (burnt & valid_in).sum() / max(valid_in.sum(), 1), 1),
         burnt_outside_ha=round(float((burnt & control & np.isfinite(dnbr)).sum() * px), 1),
         control_ha=round(float(ok_ctrl.sum() * px), 1),
-        pre_dates=";".join(pre_m["dates"]), immediate_dates=";".join(imm_m.get("dates", [])),
+        pre_dates=";".join(pre_m["dates"]), baseline=base_name,
+        baseline_dates=";".join(base_m["dates"]), immediate_dates=";".join(imm_m.get("dates", [])),
+        severity_basis="initial (just after the fire)" if initial else f"summer {first}",
         severity_summer=first, severity_dates=";".join(s1_m["dates"]),
         res_m=grid.res,
     )
@@ -671,6 +713,7 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
 
     print(f"  reflectance ranges (pre): " + ", ".join(
         f"{b} {np.nanpercentile(pre[b], 1):.3f}-{np.nanpercentile(pre[b], 99):.3f}" for b in BANDS))
+    print(f"  severity baseline: {base_name}")
     print(f"  NBR pre {np.nanpercentile(nbr_pre, 1):.2f} to {np.nanpercentile(nbr_pre, 99):.2f}; "
           f"dNBR (offset {offset:+.3f} removed) {np.nanpercentile(dnbr, 1):.2f} to "
           f"{np.nanpercentile(dnbr, 99):.2f}")
@@ -702,7 +745,7 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
             row[f"ndvi_{slugify(name)}"] = round(float(np.nanmedian(ndvi(c)[sel])), 4)
         rows.append(row)
     # pre-fire NDVI per class (reference line)
-    ndvi_pre = ndvi(pre)
+    ndvi_pre = ndvi(base)
     pre_ndvi = {slugify(n): float(np.nanmedian(ndvi_pre[inside & (cls == i)]))
                 for i, (n, _, _) in enumerate(SEVERITY) if (inside & (cls == i)).sum() >= 50}
     pre_ndvi_ctrl = float(np.nanmedian(ndvi_pre[control]))
@@ -726,7 +769,8 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
     panels = [("Before the fire", pre, pre_m, grid)]
     if imm is not None:
         panels.append(("Just after the fire", imm, imm_m, grid))
-    panels.append((f"First summer after ({first - 1}-{str(first)[2:]})", s1, s1_m, grid))
+    if not initial:
+        panels.append((f"First summer after ({first - 1}-{str(first)[2:]})", s1, s1_m, grid))
     if last != first and last in summers:
         panels.append((f"Latest summer ({last - 1}-{str(last)[2:]})", *summers[last]))
     lo = np.array([np.nanpercentile(pre[b], 2) for b in ("swir2", "nir", "red")])
@@ -756,7 +800,7 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
     plot_outline(axes[0], geom, color="#0072B2", lw=0.6)
     cb = fig.colorbar(im, ax=axes[0], shrink=0.8, extend="both")
     cb.set_label("dNBR (unitless; > 0 = burn, < 0 = greener than before)")
-    axes[0].set_title(f"dNBR: before ({pre_m['dates'][0][:4]}) minus summer {first - 1}-{str(first)[2:]}"
+    axes[0].set_title(f"dNBR: {base_name} minus {sev_name}"
                       f"\noffset {offset:+.3f} from unburnt land removed", fontsize=9)
     cmap = ListedColormap(SEVERITY_COLOURS)
     cmap.set_bad("white")
@@ -764,8 +808,8 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
                    norm=BoundaryNorm(np.arange(-0.5, len(SEVERITY)), len(SEVERITY)),
                    interpolation="nearest")
     plot_outline(axes[1], geom, color="#0072B2", lw=0.6)
-    axes[1].set_title(f"Burn severity class (Key & Benson dNBR thresholds), summer "
-                      f"{first - 1}-{str(first)[2:]}\n{stats['burnt_inside_pct']}% of the official "
+    axes[1].set_title(f"Burn severity class (Key & Benson dNBR thresholds), {sev_name}"
+                      f"\n{stats['burnt_inside_pct']}% of the official "
                       f"boundary burnt (dNBR >= 0.10); white = no clear data", fontsize=9)
     handles = [Patch(color=c, label=f"{n} ({stats['pct_' + slugify(n)]}%)")
                for (n, _, _), c in zip(SEVERITY, SEVERITY_COLOURS)]

@@ -45,6 +45,9 @@ def test_windows():
     assert tf.first_summer_after(dt.date(2019, 12, 15)) == 2021   # out in Dec: skip that summer
     assert tf.latest_summer(dt.date(2026, 11, 8)) == 2026
     assert tf.latest_summer(dt.date(2026, 2, 1)) == 2025
+    assert tf.pre_summer_year(dt.date(2019, 1, 15)) == 2018     # Dec 2017 - Mar 2018
+    assert tf.pre_summer_year(dt.date(2019, 12, 30)) == 2019    # Dec 2018 - Mar 2019
+    assert tf.pre_summer_year(dt.date(2025, 12, 4)) == 2025
 
 
 def test_grid_snaps_and_coarsens():
