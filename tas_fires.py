@@ -986,13 +986,22 @@ def overview() -> None:
         raise SystemExit("No finished sites yet: run --site first")
     summaries.sort(key=lambda r: r["ignition"])
     _write_csv(OUTPUTS / "summary_all.csv", summaries)
-    colours = {r["site"]: SITE_COLOURS[i % len(SITE_COLOURS)] for i, r in enumerate(summaries)}
+    # Colour = fire year (viridis, trimmed before the pale yellow end): meaningful, colour-blind
+    # safe, and it scales to any number of fires.
+    from matplotlib import colormaps
+    from matplotlib.colors import Normalize, to_hex
+    years = [int(r["ignition"][:4]) for r in summaries]
+    year_norm = Normalize(min(years), max(max(years), min(years) + 1))
+    year_cmap = colormaps["viridis"].resampled(256)
+    year_colour = lambda y: to_hex(year_cmap(0.88 * year_norm(y)))
+    colours = {r["site"]: year_colour(int(r["ignition"][:4])) for r in summaries}
 
     fig = plt.figure(figsize=(15, 6.2), constrained_layout=True)
     gs = fig.add_gridspec(1, 3, width_ratios=[1.0, 1.15, 1.15])
     ax = fig.add_subplot(gs[0])
     small: list[dict] = []
-    label_offset = {"riveaux-road": (-70, -22), "gell-river": (-62, -6)}
+    label_offset = {"riveaux-road": (-70, -22), "gell-river": (-62, -6),
+                    "lake-mackenzie": (-100, -34)}
     for g in _coastline():
         for ring in _rings(to_albers(g)):
             x, y = ring.xy
@@ -1010,6 +1019,8 @@ def overview() -> None:
             continue
         ax.annotate(f"{r['fire_name']}\n{r['ignition'][:4]}", (c.x, c.y), fontsize=7,
                     xytext=label_offset.get(r["site"], (6, 4)), textcoords="offset points",
+                    arrowprops=(dict(arrowstyle="-", color="#636363", lw=0.6)
+                                if r["site"] in label_offset else None),
                     bbox=dict(boxstyle="round,pad=0.2", fc="white", ec=colours[r["site"]], alpha=0.85))
     if small:
         cx = np.mean([to_albers(shape(json.loads((OUTPUTS / r["site"] / "boundary.geojson")
@@ -1043,22 +1054,39 @@ def overview() -> None:
     ax.legend(fontsize=7, ncol=3, loc="lower center", bbox_to_anchor=(0.5, -0.32))
 
     ax = fig.add_subplot(gs[2])
+    ends = []
     for r in summaries:
         rec = _read_csv(OUTPUTS / r["site"] / "recovery.csv")
-        for k, ls in ((slugify("High"), "-"), (slugify("Moderate-high"), "--")):
-            pts = [(int(x["years_since"]), float(x[f"deficit_{k}"])) for x in rec
-                   if x.get(f"deficit_{k}") not in ("", None)]
-            if pts:
-                xs, ys = zip(*pts)
-                ax.plot(xs, ys, ls, marker="o", ms=3, color=colours[r["site"]],
-                        label=f"{r['fire_name']} ({r['ignition'][:4]})" if ls == "-" else None)
+        k = slugify("High")
+        pts = [(int(x["years_since"]), float(x[f"deficit_{k}"])) for x in rec
+               if x.get(f"deficit_{k}") not in ("", None)]
+        if pts:
+            xs, ys = zip(*pts)
+            ax.plot(xs, ys, "-", marker="o", ms=3, color=colours[r["site"]])
+            ends.append([xs[-1], ys[-1], r["fire_name"], colours[r["site"]]])
+    # direct labels at line ends, nudged apart vertically where they would overlap
+    ends.sort(key=lambda e: (e[0], e[1]))
+    for i in range(1, len(ends)):
+        if ends[i][0] == ends[i - 1][0] and ends[i][1] - ends[i - 1][1] < 0.03:
+            ends[i][1] = ends[i - 1][1] + 0.03
+    for x, y, name, c in ends:
+        ax.annotate(name, (x, y), xytext=(4, 0), textcoords="offset points", fontsize=6.5,
+                    color="#333333", va="center")
+    ax.set_xlim(right=ax.get_xlim()[1] + 2.2)
     ax.axhline(0, color="black", lw=0.8)
     ax.set_xlabel("Summers since the fire (years)")
     ax.set_ylabel("NBR deficit vs before the fire (unitless)")
-    ax.set_title("Recovery of high (solid) and moderate-high (dashed) severity areas\n"
-                 "relative to unburnt land; 0 = back to pre-fire burn ratio", fontsize=9)
+    ax.set_title("Recovery of high-severity areas, relative to unburnt land\n"
+                 "0 = back to the pre-fire burn ratio; colour = fire year", fontsize=9)
     ax.grid(alpha=0.3)
-    ax.legend(fontsize=7)
+    sm = plt.cm.ScalarMappable(norm=Normalize(0, 1), cmap=year_cmap)
+    cb = fig.colorbar(sm, ax=ax, shrink=0.6, pad=0.01)
+    yrs = sorted(set(years))
+    cb.set_ticks([0.88 * year_norm(y) for y in yrs])
+    cb.set_ticklabels([str(y) for y in yrs])
+    cb.ax.tick_params(labelsize=7)
+    cb.set_label("Fire year (ignition)", fontsize=8)
+    cb.ax.set_ylim(0, 0.88)
     fig.suptitle("Recent Tasmanian bushfires from Sentinel-2: where they burnt, how severely, and "
                  "how fast the vegetation is recovering", fontsize=11)
     fig.text(0.5, -0.02, "Each fire: median Sentinel-2 composites before the fire and each summer "
