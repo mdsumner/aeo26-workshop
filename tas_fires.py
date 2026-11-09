@@ -109,6 +109,10 @@ GROUPS = {
     "fern-tree": ("Near Fern Tree", "Bushfires near Fern Tree",
                   "smaller fires within about 20 km of Fern Tree, on kunanyi/Mount Wellington",
                   "overview_fern_tree.png"),
+    "uncertain": ("Uncertain results", "Fires with weak or noisy results",
+                  "small fires near Fern Tree whose burn signal is hard to tell apart from "
+                  "change in unburnt land nearby, or is only a speckle of low severity",
+                  "overview_uncertain.png"),
 }
 FERN_TREE = (147.262, -42.923)   # longitude, latitude
 SITES = _load_sites(ROOT / "sites.csv")
@@ -828,7 +832,7 @@ def analyse_fire(key: str, fire_id: int, region: str = "", max_dates: int = 4, r
     stats["latest_summer"] = max(summers)
 
     # --- figures --------------------------------------------------------------------------------
-    caption = (f"{rec['name']} fire (FIRE_ID {fire_id}), ignited {rec['ignition']:%d %b %Y}, "
+    caption = (DISCLAIMER + f" {rec['name']} fire (FIRE_ID {fire_id}), ignited {rec['ignition']:%d %b %Y}, "
                f"declared out {end:%d %b %Y}. " + ATTRIBUTION)
     title_site = f"{rec['name']} fire, {rec['ignition'].year}" + (f": {region}" if region else "")
 
@@ -1151,6 +1155,7 @@ def _overview_figure(summaries: list[dict], group: str) -> None:
 
     ax = fig.add_subplot(gs[2])
     max_years = 1
+    n_lines = len(ax.lines)
     if local:
         # Small fires near Fern Tree are mostly low and moderate-low severity: plot those classes
         pair = ("Moderate-low", "Low")
@@ -1193,6 +1198,10 @@ def _overview_figure(summaries: list[dict], group: str) -> None:
                         color="#333333", va="center")
         rec_title = "High-severity recovery vs unburnt land\n0 = pre-fire burn ratio"
         right_pad = 2.2      # room for the names
+    if len(ax.lines) == n_lines:   # nothing to plot: say why rather than leave a blank panel
+        ax.text(0.5, 0.5, "No severity class covers 2 ha (50 pixels) or more\nin any of these "
+                "fires, so recovery cannot be tracked", transform=ax.transAxes, ha="center",
+                va="center", fontsize=9, color="#333333", wrap=True)
     ax.axhline(0, color="black", lw=0.8)
     ax.set_xlabel("Summers since the fire (years)")
     ax.set_xticks(range(1, max_years + 1))
@@ -1414,6 +1423,11 @@ def _landing_page(groups: dict[str, list[dict]]) -> None:
             notes.append(f"{false_pct:.0f}% of unburnt land nearby also shows a burn-like drop "
                          "(clearing, development, harvesting or drying): read low severity with "
                          "caution.")
+        if "uncertain" in SITES.get(site, {}).get("groups", []):
+            notes.insert(0, f"Weak or noisy result: {float(r['burnt_inside_pct']):.1f}% of the "
+                         f"official boundary shows a burn (dNBR >= 0.10), against {false_pct:.1f}% "
+                         f"of unburnt land nearby ({float(r['burnt_inside_ha']):.1f} ha burnt "
+                         "inside). The fire may not be visible at 20 m.")
         note_html = "".join(f'<p class="note">{_esc(n)}</p>' for n in notes)
         card_html[site] = (f"""
 <article class="card">
@@ -1453,7 +1467,7 @@ def _landing_page(groups: dict[str, list[dict]]) -> None:
 <figure>
   <a href="{fig}"><img src="{fig}" alt="Overview of the {_esc(tab.lower())}: a map of the fires, the burn severity mix of each fire, and recovery of high-severity areas by years since the fire"></a>
   <figcaption>Left: the fires. Middle: severity mix inside each official boundary.
-  Right: how fast high-severity (solid) and moderate-high (dashed) areas regain their pre-fire
+  Right: how fast {"high-severity areas regain" if g == "tasmania" else "moderate-low (solid) and low (dashed) severity areas regain"} their pre-fire
   burn ratio, relative to unburnt land nearby.</figcaption>
 </figure>
 <h3 class="sub">The fires, most recent first</h3>

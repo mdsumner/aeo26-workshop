@@ -95,19 +95,33 @@ page says so on each card under 10 ha.
 | `turn-creek-road-2016` | Turn Creek Road | Jan 2016 | 7.2 ha | 14 km west |
 | `tianna-road-2017` | Tianna Road | Feb 2017 | 22.3 ha | 11 km north-east |
 | `magnolia-road-2017` | Magnolia Road | Oct 2017 | 6.9 ha | 16 km north-east |
-| `peter-murrell-2017` | Peter Murrell NR, Blackmans Bay | Nov 2017 | 4.9 ha | 9 km south |
 | `holmfield-avenue-2017` | Holmfield Avenue | Nov 2017 | 13.0 ha | 15 km east |
 | `richmond-road-2019` | Richmond Road | Jan 2019 | 15.1 ha | 20 km north-east |
 | `brogo-way-2019` | Brogo Way | Jan 2019 | 5.8 ha | 16 km east |
 | `slatterys-road-2019` | Slatterys Road, Electrona | Oct 2019 | 6.2 ha | 14 km south |
 | `mount-hull-road-2020` | Mount Hull Road | Nov 2020 | 9.9 ha | 9 km north-west |
-| `wyre-forest-road-2021` | Wyre Forest Road, Molesworth | Mar 2021 | 16.6 ha | 15 km north-west |
 | `downhams-road-2023-may` | Downhams Road | May 2023 | 9.3 ha | 15 km north-east |
 | `downhams-road-2023-oct` | Downhams Road | Oct 2023 | 6.8 ha | 15 km north-east |
-| `channel-highway-2024` | Channel Highway | Feb 2024 | 2.4 ha | 8 km south-east |
 | `mount-hull-road-2024` | Mount Hull Road | Oct 2024 | 2.0 ha | 10 km north |
 | `snowy-view-heights-2024` | Snowy View Heights | Oct 2024 | 53.6 ha | 18 km west |
 | `glen-dhu-road-2026` | Glen Dhu Road | Feb 2026 | 5.6 ha | 18 km north-west |
+
+Rockingham Drive (Nov 2015, 26.7 ha, 17 km), Jeffreys Track (Dec 2019, 20.7 ha, 19 km), Cloverside
+Road (Nov 2020, 9.1 ha, 18 km) and Hydehurst Road (Dec 2016, 8.9 ha, 19 km) also meet these rules
+but have not been added yet.
+
+### Uncertain results (group `uncertain`)
+
+Three fires near Fern Tree that meet the rules above, but whose results are weak or noisy, so they
+have their own tab: the share of the boundary that shows a burn is close to, or below, the share of
+unburnt land nearby that shows the same drop, or the burn is only a speckle of low severity. Each
+card gives the two percentages.
+
+| Key | Fire | Ignited | Official area | Why it is uncertain |
+|---|---|---|---|---|
+| `peter-murrell-2017` | Peter Murrell NR, Blackmans Bay | Nov 2017 | 4.9 ha | Less of the boundary shows a burn than of unburnt land nearby |
+| `wyre-forest-road-2021` | Wyre Forest Road, Molesworth | Mar 2021 | 16.6 ha | Only about 10% of the boundary shows a burn |
+| `channel-highway-2024` | Channel Highway | Feb 2024 | 2.4 ha | About 0.5 ha of low-severity speckle |
 
 ## Outputs
 
@@ -129,6 +143,7 @@ Across all sites, in `outputs/tasmania/`:
 | `sites_map.html` | Interactive map with the fire boundaries and severity overlays (embedded), and popups linking to the figures |
 | `overview.png` | Major fires: map of the sites, the severity mix of each fire, and recovery curves |
 | `overview_fern_tree.png` | The same for the fires near Fern Tree, on a zoomed map with numbered fires |
+| `overview_uncertain.png` | The same for the fires with uncertain results |
 | `summary_all.csv` | One row per fire |
 
 `python tas_fires.py --overview` rebuilds all of these from the finished sites. The links are relative,
