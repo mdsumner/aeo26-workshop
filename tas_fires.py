@@ -67,6 +67,9 @@ DEA_COLLECTIONS = ["ga_s2am_ard_3", "ga_s2bm_ard_3", "ga_s2cm_ard_3"]
 COASTLINE_URL = "https://naciscdn.org/naturalearth/10m/physical/ne_10m_land.zip"
 
 CRS = "EPSG:3577"          # GDA94 / Australian Albers, equal-area, metres (as in the workshop data)
+# Locator insets only: GDA2020 / MGA zone 55, so Tasmania is north-up and undistorted (in 3577 it
+# is rotated ~7 deg and squashed ~6% N-S). Analysis grids and per-fire maps stay in CRS.
+INSET_CRS = "EPSG:7855"
 RES = 20.0                 # metres; the NIR-narrow and SWIR bands are 20 m native
 COARSE = 2                 # recovery summers are read at RES * COARSE (40 m) to save memory
 SMALL_FIRE_HA = 1000       # fires smaller than this (official area) keep RES for every summer:
@@ -223,10 +226,10 @@ def _ct(src: str, dst: str):
     return osr.CoordinateTransformation(_srs(src), _srs(dst))
 
 
-def true_north_angle(x: float, y: float) -> float:
-    """Angle of true north, in degrees clockwise from grid up, at EPSG:3577 point (x, y)."""
-    lon, lat, _ = _ct(CRS, "EPSG:4326").TransformPoint(x, y)
-    x2, y2, _ = _ct("EPSG:4326", CRS).TransformPoint(lon, lat + 0.05)
+def true_north_angle(x: float, y: float, crs: str = CRS) -> float:
+    """Angle of true north, in degrees clockwise from grid up, at point (x, y) in `crs`."""
+    lon, lat, _ = _ct(crs, "EPSG:4326").TransformPoint(x, y)
+    x2, y2, _ = _ct("EPSG:4326", crs).TransformPoint(lon, lat + 0.05)
     return math.degrees(math.atan2(x2 - x, y2 - y))
 
 
@@ -573,8 +576,13 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
 
 def to_albers(geom):
     """A shapely geometry from longitude/latitude (EPSG:4326) to EPSG:3577 metres."""
+    return to_crs(geom, CRS)
+
+
+def to_crs(geom, crs: str):
+    """A shapely geometry from longitude/latitude (EPSG:4326) to `crs`."""
     import shapely
-    ct = _ct("EPSG:4326", CRS)
+    ct = _ct("EPSG:4326", crs)
 
     def f(xy: np.ndarray) -> np.ndarray:
         if len(xy) == 0:
@@ -1325,12 +1333,13 @@ def _inset_svgs(sites: list[str]) -> tuple[str, dict[str, str], float]:
     once and reused, so it is identical on every card), plus per fire a horizontal and a vertical
     line crossing at the fire and, when it would span >= INSET_MIN_PX, the fire's official
     boundary filled in the same blue (#0072B2) as the boundary line on the card's maps. All in
-    EPSG:3577 at one scale (km units), with a 100 km scale bar and a true-north arrow."""
+    INSET_CRS (MGA zone 55) at one scale (km units), with a 100 km scale bar and a true-north
+    arrow."""
     import shapely
     from shapely.geometry import box, shape
     clip = box(143.8, -43.7, 148.55, -39.55)   # main island, King Island and the Furneaux Group
     land = shapely.union_all([g.intersection(clip) for g in _coastline() if g.intersects(clip)])
-    land = to_albers(land).simplify(800)
+    land = to_crs(land, INSET_CRS).simplify(800)
     x0, y0, x1, y1 = land.bounds
     pad = 6000
     x0, y0, x1, y1 = x0 - pad, y0 - pad, x1 + pad, y1 + 45000   # room at the top for N
@@ -1346,7 +1355,7 @@ def _inset_svgs(sites: list[str]) -> tuple[str, dict[str, str], float]:
         return "".join(parts)
 
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
-    ang = true_north_angle(cx, cy)
+    ang = true_north_angle(cx, cy, INSET_CRS)
     nx, ny, L = W - 30, 66, 26                                  # N arrow base, length (km)
     sb_x, sb_y = 14, H - 12                                     # 100 km scale bar
     symbol = (f'<svg width="0" height="0" style="position:absolute" aria-hidden="true">'
@@ -1366,7 +1375,7 @@ def _inset_svgs(sites: list[str]) -> tuple[str, dict[str, str], float]:
     out = {}
     for site in sites:
         gj = json.loads((OUTPUTS / site / "boundary.geojson").read_text())
-        g = to_albers(shape(gj["features"][0]["geometry"]))
+        g = to_crs(shape(gj["features"][0]["geometry"]), INSET_CRS)
         p = g.representative_point()
         fx, fy = (p.x - x0) / 1000, (y1 - p.y) / 1000
         bx0, by0, bx1, by1 = g.bounds
