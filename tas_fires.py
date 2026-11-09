@@ -1245,6 +1245,10 @@ figcaption{font-size:.85rem;color:var(--muted);padding:8px 4px 2px}
 display:flex;flex-direction:column}
 .card img{width:100%;aspect-ratio:16/10;object-fit:cover;object-position:right center;
 display:block;border-bottom:1px solid var(--line);background:var(--chip)}
+.card .pic{position:relative}
+.inset{position:absolute;top:6px;left:6px;width:96px;height:auto;padding:3px;
+background:var(--card);border:1px solid var(--line);
+border-radius:6px;pointer-events:none}
 .card .body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
 .card h3{margin:0;font-size:1.1rem}
 .when{color:var(--muted);font-size:.9rem;margin:0}
@@ -1286,11 +1290,83 @@ def _num(v, fmt="{:,.0f}", suffix="") -> str:
         return "n/a"
 
 
+INSET_W_PX = 96       # displayed width of the card locator inset (CSS px)
+INSET_MIN_PX = 2.0    # draw the fire's own shape only if it spans at least this many px
+
+
+def _inset_svgs(sites: list[str]) -> tuple[str, dict[str, str], float]:
+    """Locator insets for the landing-page cards: one Tasmania outline (an SVG <symbol>, drawn
+    once and reused, so it is identical on every card), plus per fire a horizontal and a vertical
+    line crossing at the fire and, when it would span >= INSET_MIN_PX, the fire's official
+    boundary filled in the same blue (#0072B2) as the boundary line on the card's maps. All in
+    EPSG:3577 at one scale (km units), with a 100 km scale bar and a true-north arrow."""
+    import shapely
+    from shapely.geometry import box, shape
+    clip = box(143.8, -43.7, 148.55, -39.55)   # main island, King Island and the Furneaux Group
+    land = shapely.union_all([g.intersection(clip) for g in _coastline() if g.intersects(clip)])
+    land = to_albers(land).simplify(800)
+    x0, y0, x1, y1 = land.bounds
+    pad = 6000
+    x0, y0, x1, y1 = x0 - pad, y0 - pad, x1 + pad, y1 + 45000   # room at the top for N
+    W, H = (x1 - x0) / 1000, (y1 - y0) / 1000                   # viewBox in km
+    km_per_px = W / INSET_W_PX
+
+    def path(geom) -> str:
+        parts = []
+        for ring in _rings(geom):
+            xy = np.asarray(ring.coords)
+            pts = " ".join(f"{(x - x0) / 1000:.1f},{(y1 - y) / 1000:.1f}" for x, y in xy)
+            parts.append(f"M{pts}Z")
+        return "".join(parts)
+
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    ang = true_north_angle(cx, cy)
+    nx, ny, L = W - 30, 66, 26                                  # N arrow base, length (km)
+    sb_x, sb_y = 14, H - 12                                     # 100 km scale bar
+    symbol = (f'<svg width="0" height="0" style="position:absolute" aria-hidden="true">'
+              f'<symbol id="tas-inset" viewBox="0 0 {W:.1f} {H:.1f}">'
+              f'<path d="{path(land)}" fill="var(--chip)" stroke="var(--muted)" stroke-width="2.2" '
+              f'stroke-linejoin="round"/>'
+              f'<g transform="rotate({ang:.1f} {nx} {ny})" fill="var(--ink)">'
+              f'<line x1="{nx}" y1="{ny}" x2="{nx}" y2="{ny - L + 8}" stroke="var(--ink)" '
+              f'stroke-width="3.5"/><path d="M{nx - 7},{ny - L + 10}L{nx},{ny - L}L{nx + 7},{ny - L + 10}Z"/>'
+              f'<text x="{nx}" y="{ny - L - 4}" font-size="30" font-weight="700" '
+              f'text-anchor="middle">N</text></g>'
+              f'<path d="M{sb_x},{sb_y - 7}V{sb_y}H{sb_x + 100}V{sb_y - 7}" fill="none" '
+              f'stroke="var(--ink)" stroke-width="3.5"/>'
+              f'<text x="{sb_x + 50}" y="{sb_y - 12}" font-size="26" text-anchor="middle" '
+              f'fill="var(--ink)">100 km</text>'
+              f'</symbol></svg>')
+    out = {}
+    for site in sites:
+        gj = json.loads((OUTPUTS / site / "boundary.geojson").read_text())
+        g = to_albers(shape(gj["features"][0]["geometry"]))
+        p = g.representative_point()
+        fx, fy = (p.x - x0) / 1000, (y1 - p.y) / 1000
+        bx0, by0, bx1, by1 = g.bounds
+        span_px = max(bx1 - bx0, by1 - by0) / 1000 / km_per_px
+        shape_svg = ""
+        if span_px >= INSET_MIN_PX:
+            shape_svg = (f'<path d="{path(g.simplify(1500))}" fill="#0072B2" stroke="#ffffff" '
+                         f'stroke-width="1.5" fill-rule="evenodd"/>')
+        what = ("its official boundary in blue, as on the maps" if shape_svg
+                else "too small to show its boundary at this scale")
+        out[site] = (f'<svg class="inset" viewBox="0 0 {W:.1f} {H:.1f}" role="img" '
+                     f'aria-label="Locator map of Tasmania: the lines cross at the fire; {what}">'
+                     f'<use href="#tas-inset"/>'
+                     f'<g stroke="#D55E00" stroke-width="2.4" opacity="0.9">'
+                     f'<line x1="0" y1="{fy:.1f}" x2="{W:.1f}" y2="{fy:.1f}"/>'
+                     f'<line x1="{fx:.1f}" y1="0" x2="{fx:.1f}" y2="{H:.1f}"/></g>'
+                     f'{shape_svg}</svg>')
+    return symbol, out, INSET_MIN_PX * km_per_px
+
+
 def _landing_page(groups: dict[str, list[dict]]) -> None:
     """outputs/tasmania/index.html: a static landing page for GitHub Pages (no external assets),
     with one tab per site group (CSS only: radio buttons, no scripts)."""
     sev_vars = ["--sev-un", "--sev-low", "--sev-ml", "--sev-mh", "--sev-hi"]
     summaries = list({r["site"]: r for rows in groups.values() for r in rows}.values())
+    inset_symbol, insets, inset_min_km = _inset_svgs([r["site"] for r in summaries])
     card_html = {}
     for r in summaries:
         site = r["site"]
@@ -1334,8 +1410,8 @@ def _landing_page(groups: dict[str, list[dict]]) -> None:
         note_html = "".join(f'<p class="note">{_esc(n)}</p>' for n in notes)
         card_html[site] = (f"""
 <article class="card">
-  <a href="{_esc(site)}/dnbr_severity.png"><img loading="lazy" src="{_esc(site)}/dnbr_severity.png"
-     alt="Burn severity map of the {_esc(r['fire_name'])} fire"></a>
+  <div class="pic"><a href="{_esc(site)}/dnbr_severity.png"><img loading="lazy" src="{_esc(site)}/dnbr_severity.png"
+     alt="Burn severity map of the {_esc(r['fire_name'])} fire"></a>{insets[site]}</div>
   <div class="body">
     <h3>{_esc(r['fire_name'])} fire, {ign.year}</h3>
     <p class="when">Ignited {ign:%d %b %Y}, declared out {out:%d %b %Y} ({_esc(str(r['cause']).lower())})</p>
@@ -1375,6 +1451,9 @@ def _landing_page(groups: dict[str, list[dict]]) -> None:
 </figure>
 <h3 class="sub">The fires, most recent first</h3>
 <div class="legend">{legend}</div>
+<p class="when">Inset on each map: all of Tasmania at the same scale; the orange lines cross at
+the fire, and the fire's official boundary is filled in the maps' boundary blue when it is big
+enough to see (about {inset_min_km:.0f} km across or more).</p>
 <div class="grid">{cards}
 </div>
 </section>""")
@@ -1392,6 +1471,7 @@ def _landing_page(groups: dict[str, list[dict]]) -> None:
 <style>{LANDING_CSS}{tab_css}</style>
 </head>
 <body>
+{inset_symbol}
 <main>
 <h1>Tasmanian bushfires from Sentinel-2</h1>
 <p class="lede">Where {len(summaries)} Tasmanian bushfires burnt, how severely, and how fast the
