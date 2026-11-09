@@ -126,6 +126,19 @@ SITES = {
     "margate-plain": dict(
         fire_id=14005,
         region="Hills west of Margate, south of Hobart: bushland and forest"),
+    # Next list (from --candidates triage)
+    "nelsons-tier": dict(
+        fire_id=14676,
+        region="About 40 km north-east of Hobart: the largest fire near Hobart in 2025-26"),
+    "labillardiere-peninsula": dict(
+        fire_id=14670,
+        region="Labillardiere Peninsula, South Bruny National Park, Bruny Island"),
+    "pelham-road": dict(
+        fire_id=10766,
+        region="About 40 km north of Hobart near Pelham: lightning-caused, summer 2019-20"),
+    "thunder-and-lightning-bay": dict(
+        fire_id=8465,
+        region="Flinders Island, Bass Strait"),
 }
 
 ATTRIBUTION = ("Sentinel-2: Digital Earth Australia ARD (Geoscience Australia, CC BY 4.0; contains "
