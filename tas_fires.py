@@ -475,7 +475,8 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
     path = site_dir / f"{label}_{int(grid.res)}m.tif"
     if path.exists() and not refresh:
         comp, meta = _read_composite(path)
-        if meta.get("valid_fraction", 0) >= min_cover - 0.05:
+        # accept if well covered, or if the last build already tried every candidate date
+        if meta.get("valid_fraction", 0) >= min_cover - 0.05 or meta.get("searched_all"):
             log(f"  {label}: cached, dates {', '.join(meta['dates'])}")
             return comp, meta
         log(f"  {label}: cached composite covers only {meta.get('valid_fraction')}: rebuilding")
@@ -505,7 +506,7 @@ def composite(site_dir: Path, label: str, bbox_ll: list[float], start: dt.date, 
         log(f"    {len(used)} dates used; study area covered {cover.mean():.1%}")
     meta = dict(label=label, window=[start.isoformat(), end.isoformat()], dates=sorted(used),
                 clear_fraction=dict(zip(used, fracs)), res_m=grid.res,
-                collections=DEA_COLLECTIONS, n_dates_found=len(groups))
+                collections=DEA_COLLECTIONS, n_dates_found=len(groups), searched_all=True)
     if not used:
         log(f"  {label}: no usable dates")
         return None, meta
