@@ -119,6 +119,11 @@ GROUPS = {
 }
 FERN_TREE = (147.262, -42.923)   # longitude, latitude
 SITES = _load_sites(ROOT / "sites.csv")
+# Reference places for "distance to" on the landing page's All tab: name -> (longitude, latitude)
+PLACES = {"Fern Tree": FERN_TREE, "Hobart": (147.327, -42.882), "Launceston": (147.139, -41.433),
+          "Devonport": (146.350, -41.180), "Burnie": (145.905, -41.052),
+          "Queenstown": (145.556, -42.080), "St Helens": (148.240, -41.321),
+          "Miena": (146.732, -41.983)}
 
 ATTRIBUTION = ("Sentinel-2: Digital Earth Australia ARD (Geoscience Australia, CC BY 4.0; contains "
                "Copernicus data). Fire boundaries: Fire History, theLIST (c) State of Tasmania, "
@@ -1307,9 +1312,63 @@ margin-bottom:-1px;cursor:pointer;font-weight:600;color:var(--muted)}
 .tabs>input:focus-visible~.tablist label{outline:2px solid var(--accent)}
 .panel{display:none}
 h3.sub{font-size:1.1rem;margin:28px 0 10px}
+.sorter{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:4px 0 12px}
+.sorter select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:8px;
+background:var(--card);color:var(--ink);max-width:100%}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+.chip{font-size:.78rem;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--muted)}
+.chip.dist{color:var(--ink);font-weight:600}
+[hidden]{display:none!important}
 footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);
 padding-top:16px}
 """
+
+
+# Sorting for the All tab: reorders the cards from their data-* attributes. Runs only in the
+# browser; the location option uses the browser's geolocation and sends nothing anywhere.
+SORT_JS = """
+(function(){
+var grid=document.getElementById('all-grid'),key=document.getElementById('sort-key'),
+place=document.getElementById('sort-place'),pl=document.getElementById('place-label');
+if(!grid)return;
+document.getElementById('sorter').hidden=false;
+var cards=Array.prototype.slice.call(grid.children),here=null;
+function km(lon1,lat1,lon2,lat2){var r=Math.PI/180,a=Math.sin((lat2-lat1)*r/2),
+b=Math.sin((lon2-lon1)*r/2),h=a*a+Math.cos(lat1*r)*Math.cos(lat2*r)*b*b;
+return 2*6371.0088*Math.asin(Math.sqrt(h));}
+function origin(){if(place.value==='here')return here;return place.value.split(',').map(Number);}
+function apply(){var k=key.value,o=null;pl.hidden=k!=='distance';
+if(k==='distance'){o=origin();if(!o)return;}
+var name=place.value==='here'?'you':place.options[place.selectedIndex].text;
+cards.forEach(function(c){var d=c.querySelector('.dist');
+if(o){var v=km(o[0],o[1],+c.dataset.lon,+c.dataset.lat);c.dataset.km=v;
+d.textContent=(v<10?v.toFixed(1):v.toFixed(0))+' km from '+name;d.hidden=false;}
+else d.hidden=true;});
+var f={recent:function(a,b){return a.dataset.ign<b.dataset.ign?1:a.dataset.ign>b.dataset.ign?-1:0;},
+oldest:function(a,b){return a.dataset.ign<b.dataset.ign?-1:a.dataset.ign>b.dataset.ign?1:0;},
+distance:function(a,b){return a.dataset.km-b.dataset.km;},
+area:function(a,b){return b.dataset.area-a.dataset.area;},
+signal:function(a,b){return b.dataset.signal-a.dataset.signal;}}[k];
+cards.slice().sort(f).forEach(function(c){grid.appendChild(c);});}
+key.addEventListener('change',apply);
+place.addEventListener('change',function(){
+if(place.value==='here'&&!here&&navigator.geolocation){
+navigator.geolocation.getCurrentPosition(function(p){here=[p.coords.longitude,p.coords.latitude];
+apply();},function(){place.selectedIndex=0;apply();});}else apply();});
+apply();
+})();
+"""
+
+
+def _fire_centres(sites: list[str]) -> dict[str, tuple[float, float]]:
+    """A point inside each fire's official boundary (longitude, latitude), for distances."""
+    from shapely.geometry import shape
+    out = {}
+    for site in sites:
+        gj = json.loads((OUTPUTS / site / "boundary.geojson").read_text())
+        p = shape(gj["features"][0]["geometry"]).representative_point()
+        out[site] = (p.x, p.y)
+    return out
 
 
 def _esc(text) -> str:
@@ -1468,7 +1527,8 @@ def _landing_page(groups: dict[str, list[dict]]) -> None:
     sev_vars = ["--sev-un", "--sev-low", "--sev-ml", "--sev-mh", "--sev-hi"]
     summaries = list({r["site"]: r for rows in groups.values() for r in rows}.values())
     inset_symbol, insets, inset_min_km = _inset_svgs([r["site"] for r in summaries])
-    card_html, detail_pages = {}, {}
+    centres = _fire_centres([r["site"] for r in summaries])
+    card_html, detail_pages, sort_data = {}, {}, {}
     for r in summaries:
         site = r["site"]
         ign = dt.date.fromisoformat(r["ignition"])
@@ -1526,8 +1586,14 @@ def _landing_page(groups: dict[str, list[dict]]) -> None:
         bar_html = f'<div class="bar" role="img" aria-label="Severity mix">{bar}</div>'
         detail_pages[site] = dict(r=r, year=ign.year, when=when_html, stats=stats_html,
                                   bar=bar_html, notes=note_html)
+        # Sort keys for the All tab. Signal = % of the boundary burnt minus % of unburnt land
+        # nearby with the same drop: the bigger the gap, the clearer (more certain) the result.
+        lon, lat = centres[site]
+        sort_data[site] = (f' data-ign="{ign.isoformat()}" data-area="{area:.1f}" '
+                           f'data-signal="{float(r["burnt_inside_pct"]) - false_pct:.1f}" '
+                           f'data-lon="{lon:.4f}" data-lat="{lat:.4f}"')
         card_html[site] = (f"""
-<article class="card">
+<article class="card"{{sort}}>
   <div class="pic"><a href="{_esc(site)}/dnbr_severity.png"><img loading="lazy" src="{_esc(site)}/dnbr_severity.png"
      alt="Burn severity map of the {_esc(r['fire_name'])} fire"></a></div>
   <div class="body">
@@ -1538,6 +1604,7 @@ def _landing_page(groups: dict[str, list[dict]]) -> None:
       </div>
       {insets[site]}
     </div>
+    {{extra}}
     {stats_html}
     {bar_html}
     {note_html}
@@ -1553,13 +1620,16 @@ def _landing_page(groups: dict[str, list[dict]]) -> None:
     legend = "".join(f'<span><i style="background:var({v})"></i>{n}</span>'
                      for (n, _, _), v in zip(SEVERITY, sev_vars))
     _detail_pages(detail_pages, insets, inset_symbol, legend)
+    def card(site, extra=""):
+        return card_html[site].replace("{sort}", sort_data[site]).replace("{extra}", extra)
+
     inputs, labels, panels = [], [], []
     for i, (g, rows) in enumerate(groups.items()):
         tab, heading, blurb, fig = GROUPS[g]
         inputs.append(f'<input type="radio" name="tab" id="tab-{g}"{" checked" if i == 0 else ""}>')
         labels.append(f'<label for="tab-{g}" role="tab">{_esc(tab)} ({len(rows)})</label>')
-        cards = "".join(card_html[r["site"]] for r in sorted(rows, key=lambda r: r["ignition"],
-                                                               reverse=True))
+        cards = "".join(card(r["site"]) for r in sorted(rows, key=lambda r: r["ignition"],
+                                                          reverse=True))
         panels.append(f"""<section class="panel" id="panel-{g}">
 <h2>{_esc(heading)}: {_esc(blurb)}</h2>
 <figure>
@@ -1577,10 +1647,46 @@ enough to see (about {inset_min_km:.0f} km across or more).</p>
 <div class="grid">{cards}
 </div>
 </section>""")
+    # All tab: every fire once, sortable in the browser (a small inline script; without
+    # scripts the controls stay hidden and the cards stay most recent first)
+    inputs.append('<input type="radio" name="tab" id="tab-all">')
+    labels.append(f'<label for="tab-all" role="tab">All ({len(summaries)})</label>')
+    all_cards = []
+    for r in sorted(summaries, key=lambda r: (r["ignition"], r["site"]), reverse=True):
+        chips = "".join(f'<span class="chip">{_esc(GROUPS[g][0])}</span>'
+                        for g in r["groups"].split(";") if g in GROUPS)
+        all_cards.append(card(r["site"], f'<p class="chips">{chips}<span class="chip dist" '
+                                         f'hidden></span></p>'))
+    places = "".join(f'<option value="{lon},{lat}">{_esc(n)}</option>'
+                     for n, (lon, lat) in PLACES.items())
+    panels.append(f"""<section class="panel" id="panel-all">
+<h2>All {len(summaries)} fires</h2>
+<div class="sorter" id="sorter" hidden>
+  <label>Sort by <select id="sort-key">
+    <option value="recent">Most recent first</option>
+    <option value="oldest">Oldest first</option>
+    <option value="distance">Distance to a place</option>
+    <option value="area">Size (official area, largest first)</option>
+    <option value="signal">Certainty (clearest burn signal first)</option>
+  </select></label>
+  <label id="place-label" hidden>from <select id="sort-place">{places}
+    <option value="here">My location (asks your browser; stays on your device)</option>
+  </select></label>
+</div>
+<p class="when" id="sort-help">Each card shows which tab it comes from.
+<b>Certainty</b> is the % of the official boundary that shows a burn (dNBR &gt;= 0.10) minus the
+% of unburnt land nearby that shows the same drop: a big gap means a clear result, a small or
+negative gap a weak one. <b>Distance</b> is in a straight line (great circle) from the place to a
+point inside the fire's official boundary.</p>
+<p class="note">{_esc(DISCLAIMER)}</p>
+<div class="legend">{legend}</div>
+<div class="grid" id="all-grid">{"".join(all_cards)}
+</div>
+</section>""")
     tab_inputs, tab_labels, tab_panels = "\n".join(inputs), "".join(labels), "\n".join(panels)
     tab_css = "".join(f"#tab-{g}:checked~.tablist label[for=tab-{g}]{{background:var(--card);"
                       f"border-color:var(--line);border-bottom-color:var(--card);color:var(--ink)}}"
-                      f"#tab-{g}:checked~#panel-{g}{{display:block}}" for g in groups)
+                      f"#tab-{g}:checked~#panel-{g}{{display:block}}" for g in [*groups, "all"])
     page = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -1636,6 +1742,7 @@ Tasmania, CC BY 3.0 AU. Coastline: Natural Earth (public domain). Map tiles: (c)
 contributors. Built with Claude Code at the AEO26 workshop, Nipaluna/Hobart, November 2026.</p>
 </footer>
 </main>
+<script>{SORT_JS}</script>
 </body>
 </html>
 """

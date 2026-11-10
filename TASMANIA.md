@@ -149,7 +149,7 @@ Across all sites, in `outputs/tasmania/`:
 
 | File | What it is |
 |---|---|
-| `index.html` | Landing page with a tab per group of sites, and one card per fire (most recent first) with links to every figure. Built for GitHub Pages, with no external files or scripts |
+| `index.html` | Landing page with a tab per group of sites, and one card per fire (most recent first) with links to every figure. An **All** tab lists every fire once and sorts by date, distance to a place (or your own location, worked out in the browser), size, or certainty (% of the boundary burnt minus % of unburnt land nearby with the same drop). Built for GitHub Pages, with no external files; one small inline script does the sorting |
 | `sites_map.html` | Interactive map with the fire boundaries and severity overlays (embedded), and popups linking to the figures |
 | `overview.png` | Major fires: map of the sites, the severity mix of each fire, and recovery curves |
 | `overview_fern_tree.png` | The same for the fires near Fern Tree, on a zoomed map with numbered fires |
