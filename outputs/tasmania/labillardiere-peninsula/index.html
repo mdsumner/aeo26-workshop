@@ -2,116 +2,13 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Labillardiere Peninsula fire, 2025: Tasmanian Bushfires from Sentinel-2</title>
-<style>
-:root{--bg:#fbfaf7;--card:#ffffff;--ink:#1d1d1b;--muted:#5d5d58;--line:#e2e0da;--accent:#0072B2;
---chip:#f1efe9;--sev-low:#fed976;--sev-ml:#fd8d3c;--sev-mh:#e31a1c;--sev-hi:#800026;--sev-un:#d9d9d9}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#151514;--card:#1f1f1d;
---ink:#ecebe6;--muted:#a8a69f;--line:#34332f;--accent:#56B4E9;--chip:#2a2926}}
-:root[data-theme="dark"]{--bg:#151514;--card:#1f1f1d;--ink:#ecebe6;--muted:#a8a69f;--line:#34332f;
---accent:#56B4E9;--chip:#2a2926}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,
-"Segoe UI",Roboto,sans-serif}
-main{max-width:1100px;margin:0 auto;padding:32px 16px 64px}
-h1{font-size:clamp(1.6rem,4vw,2.3rem);line-height:1.15;margin:0 0 8px}
-h2{font-size:1.25rem;margin:40px 0 12px}
-p{margin:0 0 12px;max-width:72ch}
-a{color:var(--accent)}
-.lede{color:var(--muted);font-size:1.05rem}
-.links{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 8px}
-.links a{display:inline-block;padding:8px 14px;border:1px solid var(--line);border-radius:999px;
-background:var(--card);text-decoration:none;font-weight:600}
-figure{margin:16px 0;background:var(--card);border:1px solid var(--line);border-radius:10px;
-padding:8px}
-figure img{width:100%;height:auto;display:block;border-radius:6px}
-figcaption{font-size:.85rem;color:var(--muted);padding:8px 4px 2px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;
-display:flex;flex-direction:column}
-.card img{width:100%;aspect-ratio:16/10;object-fit:cover;object-position:right center;
-display:block;border-bottom:1px solid var(--line);background:var(--chip)}
-.card .pic{position:relative}
-.head{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
-.head-text{display:flex;flex-direction:column;gap:8px;min-width:0}
-.head h1{margin:0}
-.crumbs{font-size:.9rem;margin:0 0 8px}
-.pager{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:.9rem;
-margin:0 0 16px}
-.pager a.older{margin-left:auto}
-.detail .stats{grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin:20px 0 12px}
-.detail .bar{max-width:72ch;margin-bottom:8px}
-.detail .legend{margin-bottom:16px}
-.detail .note{max-width:72ch}
-.inset{flex:none;width:96px;height:auto;padding:3px;background:var(--card);
-border:1px solid var(--line);border-radius:6px}
-.card .body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
-.card h3{margin:0;font-size:1.1rem}
-.when{color:var(--muted);font-size:.9rem;margin:0}
-.region{font-size:.92rem;margin:0}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin:4px 0;font-size:.9rem}
-.stats div{display:flex;flex-direction:column}
-.stats b{font-size:1.15rem;font-variant-numeric:tabular-nums}
-.stats span{color:var(--muted);font-size:.8rem}
-.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--chip)}
-.bar i{display:block;height:100%}
-.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.8rem;color:var(--muted)}
-.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;
-vertical-align:-1px}
-.warn{border:1px solid var(--sev-ml);border-left:6px solid var(--sev-ml);border-radius:8px;
-background:var(--card);padding:10px 14px;margin:14px 0;max-width:72ch;font-size:.95rem}
-.warn p{margin:0}
-.note{font-size:.82rem;color:var(--muted);border-left:3px solid var(--sev-ml);padding-left:8px}
-.figlinks{margin-top:auto;font-size:.9rem;display:flex;gap:12px;flex-wrap:wrap}
-ul{padding-left:20px;max-width:72ch}
-li{margin-bottom:6px}
-.tabs>input{position:absolute;opacity:0;pointer-events:none}
-.tablist{display:flex;gap:4px;margin-top:28px;border-bottom:1px solid var(--line)}
-.tablist label{padding:10px 18px;border:1px solid transparent;border-radius:10px 10px 0 0;
-margin-bottom:-1px;cursor:pointer;font-weight:600;color:var(--muted)}
-.tabs>input:focus-visible~.tablist label{outline:2px solid var(--accent)}
-.panel{display:none}
-h3.sub{font-size:1.1rem;margin:28px 0 10px}
-.sorter{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:4px 0 12px}
-.sorter select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:8px;
-background:var(--card);color:var(--ink);max-width:100%}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0}
-.chip{font-size:.78rem;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--muted)}
-.chip.dist{color:var(--ink);font-weight:600}
-[hidden]{display:none!important}
-footer{margin-top:40px;font-size:.85rem;color:var(--muted);border-top:1px solid var(--line);
-padding-top:16px}
-</style>
+<title>Moved: labillardiere-peninsula</title>
+<link rel="canonical" href="https://mdsumner.github.io/epicormic/labillardiere-peninsula/">
+<meta name="robots" content="noindex">
+<meta http-equiv="refresh" content="0; url=https://mdsumner.github.io/epicormic/labillardiere-peninsula/">
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="tas-inset" viewBox="0 0 408.3 498.1"><path d="M305.8,465.0 300.9,477.5 295.5,474.7 295.4,471.0 293.8,470.1 295.6,468.6 293.8,467.0 292.2,473.1 289.9,476.6 288.4,476.6 283.3,468.6 283.7,466.5 285.2,467.0 289.4,471.3 290.8,471.3 289.9,461.8 291.7,460.1 294.6,463.7 295.9,460.5 294.8,457.8 301.0,450.0 305.8,465.0ZM311.3,444.7 310.9,448.8 308.1,448.1 305.6,449.6 304.5,446.3 307.8,442.8 300.4,439.3 301.1,437.1 305.1,436.4 302.9,434.3 305.6,429.3 308.6,434.0 311.3,444.7ZM349.8,441.3 348.1,435.9 346.0,438.6 346.8,443.8 344.4,443.7 340.7,448.3 333.2,439.2 332.9,436.0 337.2,432.9 329.1,429.2 326.9,423.6 328.0,421.2 332.0,419.4 331.7,414.4 332.8,414.0 335.9,415.3 334.7,421.7 338.5,425.3 342.8,427.1 348.6,425.1 350.4,423.4 348.0,423.3 345.2,420.0 344.3,417.2 346.5,415.8 344.3,415.1 344.9,410.4 343.8,409.5 338.8,410.3 336.0,408.8 332.6,409.5 329.8,406.4 327.1,405.7 325.0,401.2 319.9,402.9 317.5,404.8 317.4,407.9 321.9,418.5 318.0,423.8 311.9,426.1 309.1,420.8 310.3,419.3 313.3,423.1 314.5,422.3 315.8,418.6 314.4,417.0 315.3,410.9 310.8,412.9 309.8,408.5 305.2,405.5 299.5,396.3 297.6,397.6 302.4,403.9 305.7,412.7 303.3,418.6 303.5,425.7 298.5,422.2 297.0,424.0 300.8,430.2 296.5,435.3 297.2,449.2 293.3,452.8 289.6,450.9 289.2,447.7 283.8,446.6 285.9,442.8 285.0,438.1 281.2,443.3 278.3,440.8 277.8,433.4 276.6,433.1 274.1,435.5 273.6,443.0 282.9,450.6 284.4,454.1 281.6,457.2 277.9,455.6 273.3,458.7 278.1,458.3 280.8,460.5 276.1,467.8 270.0,468.6 276.4,471.5 277.8,474.0 271.7,473.8 272.2,480.0 268.4,480.0 267.8,482.9 271.7,485.4 270.4,488.8 263.9,492.1 260.4,488.7 253.0,490.8 250.1,486.2 244.0,482.3 242.5,475.9 240.3,473.1 240.6,479.3 239.0,478.6 237.0,480.3 226.1,479.8 222.9,477.2 219.1,480.2 216.8,475.8 214.7,475.0 212.4,475.8 210.8,481.1 209.4,478.1 207.6,477.4 204.1,478.9 204.2,482.0 201.9,481.2 197.5,482.7 197.4,471.5 195.4,467.9 190.0,463.4 190.7,462.0 195.6,463.8 193.3,460.0 202.2,460.6 204.5,461.7 208.4,467.4 208.4,462.8 210.1,463.6 209.9,461.7 214.0,465.1 213.8,456.7 208.8,452.1 204.3,458.6 202.2,456.8 200.7,452.6 198.8,457.5 197.3,457.4 193.2,452.9 192.1,446.6 188.3,443.2 188.3,448.9 185.3,449.7 184.6,451.8 188.5,451.7 189.2,453.6 186.9,455.5 181.6,454.0 179.1,444.7 173.4,437.6 173.0,432.8 170.5,433.8 168.4,432.8 169.5,427.3 165.0,424.6 162.0,418.7 154.8,417.4 149.7,409.0 145.4,397.5 142.6,395.3 144.2,390.4 141.3,383.4 139.0,383.2 137.4,379.2 134.0,378.4 136.6,373.3 132.3,367.3 131.2,362.9 131.8,359.0 128.7,348.8 126.8,333.2 129.2,335.7 131.3,340.7 136.5,342.7 138.8,347.1 147.5,353.2 150.8,367.9 151.4,357.1 154.6,358.3 157.5,348.8 154.5,350.9 153.0,346.4 151.3,348.7 149.7,347.3 141.5,337.5 139.6,327.5 137.8,327.1 134.4,330.9 134.6,335.3 133.6,336.1 130.1,333.1 133.0,325.0 131.6,315.9 127.7,307.7 115.3,295.0 114.9,292.0 106.6,280.1 103.3,279.0 102.6,273.2 98.4,261.5 92.1,250.7 88.3,247.3 90.9,244.7 90.7,241.7 82.0,226.2 82.6,220.1 80.5,214.9 81.0,210.4 74.9,201.2 77.6,198.7 75.7,193.8 78.9,190.4 82.3,188.8 82.8,187.1 83.1,180.3 81.0,166.0 83.6,161.4 87.7,170.9 90.0,169.6 98.6,172.6 106.2,172.5 112.5,176.7 114.0,179.2 117.7,180.7 120.0,179.1 118.9,177.4 128.7,177.2 129.8,172.9 128.5,168.8 130.1,169.2 133.5,173.0 130.4,175.2 130.4,177.8 136.6,182.8 141.9,183.4 145.1,185.3 151.9,182.8 152.8,187.1 156.1,189.8 169.4,192.8 170.6,196.9 176.3,202.5 185.2,204.0 186.0,205.9 190.5,206.6 199.0,211.9 210.4,216.4 222.1,217.7 228.0,217.4 238.3,213.7 239.6,217.6 241.6,218.9 242.8,218.4 241.3,216.8 242.0,215.3 247.3,209.2 254.8,206.1 259.2,209.0 260.2,216.2 264.6,217.6 268.4,216.0 271.0,217.2 272.1,216.7 268.6,213.4 264.5,212.6 261.6,209.9 261.1,207.2 262.7,203.3 270.7,200.9 278.4,196.2 279.5,197.7 290.7,199.6 300.4,192.4 301.2,194.1 305.2,192.5 306.5,195.8 309.4,196.5 310.7,199.3 313.7,199.9 320.1,193.6 325.8,183.0 331.2,180.0 332.7,179.7 336.8,184.4 339.8,183.2 345.4,187.3 351.0,185.2 353.5,182.9 357.2,171.7 359.4,170.1 363.2,171.2 364.3,173.8 367.5,173.6 372.8,181.1 378.3,181.9 384.7,191.1 388.3,199.9 383.3,204.6 386.1,206.9 383.3,213.5 383.0,222.1 387.0,229.5 381.3,235.8 381.6,238.1 388.0,232.1 389.7,232.1 383.2,249.6 383.2,259.2 385.9,267.0 383.4,276.2 384.9,283.0 381.1,288.5 383.3,296.5 386.4,301.4 383.8,316.3 389.1,323.0 385.0,329.6 388.7,331.2 388.9,333.4 388.0,337.5 385.3,341.6 380.1,337.7 384.2,331.3 381.4,327.9 384.9,325.6 385.4,324.0 381.7,323.2 377.8,318.9 372.5,317.1 378.3,313.2 379.1,311.4 379.2,309.6 376.7,308.0 375.5,304.1 374.2,304.7 375.2,310.6 372.6,309.4 371.3,310.4 371.9,315.6 369.9,317.4 371.9,319.3 377.0,320.9 368.9,320.6 366.7,321.6 365.0,332.3 362.1,335.2 361.3,338.7 360.0,339.0 355.7,348.0 359.1,345.0 361.3,347.3 359.1,351.1 359.0,367.4 354.6,371.7 351.5,367.7 351.1,370.0 349.3,370.8 353.2,375.9 354.8,382.7 354.4,390.2 349.1,394.7 349.0,401.2 348.2,402.5 347.2,402.0 345.3,406.4 346.4,408.9 351.1,408.9 348.3,407.0 349.3,404.6 351.6,403.3 353.0,407.1 356.4,407.1 358.3,411.3 357.2,414.3 358.8,415.9 358.7,418.0 355.7,420.0 354.9,428.0 353.6,429.4 355.9,433.2 354.7,437.1 357.6,437.8 357.9,438.9 355.7,443.9 357.4,447.0 354.6,446.0 349.8,441.3ZM108.7,166.8 98.2,170.8 96.7,169.5 96.2,163.8 101.3,158.2 102.6,160.9 109.9,164.3 112.9,168.4 110.5,168.4 108.7,166.8ZM85.3,156.0 83.9,147.3 82.1,144.7 82.7,143.2 86.7,142.4 87.9,135.2 89.0,137.7 89.1,145.9 87.1,148.5 87.1,155.1 85.3,156.0ZM92.4,137.6 96.6,135.0 95.8,133.5 97.8,132.1 103.2,134.0 102.5,140.2 98.4,142.1 96.1,141.9 92.4,137.6ZM31.9,82.2 31.7,90.9 29.9,95.3 24.8,100.4 14.1,106.5 12.4,106.4 9.5,98.2 10.7,98.3 11.2,96.3 10.4,88.9 7.4,86.9 6.0,83.6 6.3,77.6 8.1,72.5 6.6,65.5 7.7,63.2 7.3,59.3 11.9,57.0 14.5,53.9 13.0,46.6 13.9,45.6 18.1,45.0 26.1,50.4 28.3,54.7 28.5,63.6 30.3,70.4 28.8,80.0 31.9,82.2ZM370.5,384.5 364.3,384.4 367.2,390.0 361.7,391.3 359.1,393.8 362.0,384.6 360.1,384.3 359.4,380.5 364.9,374.7 369.4,376.0 370.6,380.8 372.7,382.5 370.5,384.5ZM386.7,350.0 379.3,346.6 377.8,343.8 380.7,343.5 384.8,345.6 386.7,350.0ZM382.4,142.9 377.4,154.7 374.7,151.8 371.2,150.8 370.3,148.8 369.9,147.3 372.1,145.5 382.4,142.9ZM399.9,136.4 395.9,140.8 395.7,143.1 392.5,142.5 389.9,144.6 388.9,137.1 386.2,136.9 380.7,139.9 377.8,137.5 376.0,139.0 368.1,138.8 361.0,134.7 362.3,130.3 367.5,127.4 374.9,127.1 377.7,129.1 379.1,126.1 385.1,125.4 388.8,122.5 390.7,123.1 394.5,128.3 397.7,130.3 402.3,136.4 400.9,137.8 399.9,136.4ZM349.8,124.1 347.5,122.1 348.9,120.6 353.2,120.8 352.0,123.9 349.8,124.1ZM339.2,99.8 337.9,98.2 339.7,96.7 340.4,91.9 342.7,90.7 343.2,92.3 341.2,98.7 339.2,99.8ZM358.1,98.4 356.6,93.3 351.8,91.6 354.0,85.6 351.6,76.5 347.0,78.6 341.1,74.7 344.4,71.2 350.2,67.9 349.4,65.7 351.8,64.1 350.4,59.7 353.0,61.2 358.0,56.3 376.0,81.3 387.3,84.4 385.7,97.7 380.6,102.6 384.3,102.7 387.0,99.6 389.7,110.0 386.4,107.3 385.8,109.7 389.2,113.4 387.5,115.0 379.7,111.2 377.2,116.3 371.9,118.5 367.7,116.7 364.8,113.1 366.4,110.8 362.7,106.6 361.8,99.7 358.1,98.4Z" fill="var(--chip)" stroke="var(--muted)" stroke-width="2.2" stroke-linejoin="round"/><g transform="rotate(-0.6 378.25115462302256 66)" fill="var(--ink)"><line x1="378.25115462302256" y1="66" x2="378.25115462302256" y2="48" stroke="var(--ink)" stroke-width="3.5"/><path d="M371.25115462302256,50L378.25115462302256,40L385.25115462302256,50Z"/><text x="378.25115462302256" y="36" font-size="30" font-weight="700" text-anchor="middle">N</text></g><path d="M14,479.1224786462374V486.1224786462374H114V479.1224786462374" fill="none" stroke="var(--ink)" stroke-width="3.5"/><text x="64" y="474.1224786462374" font-size="26" text-anchor="middle" fill="var(--ink)">100 km</text></symbol></svg>
-<main class="detail">
-<p class="crumbs"><a href="../index.html">&larr; All fires</a></p>
-<nav class="pager" aria-label="Other fires"><a href="../nelsons-tier/index.html">&larr; Newer: Nelsons Tier fire, 2025</a><a class="older" href="../mount-donaldson/index.html">Older: Mount Donaldson fire, 2025 &rarr;</a></nav>
-<div class="head">
-  <div class="head-text">
-    <h1>Labillardiere Peninsula fire, 2025</h1>
-    <p class="when">Ignited 02 Oct 2025, declared out 20 Nov 2025 (deliberate)</p><p class="region">Labillardiere Peninsula, South Bruny National Park, Bruny Island</p>
-  </div>
-  <svg class="inset" viewBox="0 0 408.3 498.1" role="img" aria-label="Locator map of Tasmania: the lines cross at the fire; too small to show its boundary at this scale"><use href="#tas-inset"/><g stroke="#D55E00" stroke-width="2.4" opacity="0.9"><line x1="0" y1="469.1" x2="408.3" y2="469.1"/><line x1="286.1" y1="0" x2="286.1" y2="498.1"/></g></svg>
-</div>
-<div class="stats">
-      <div><b>825 ha</b><span>official area</span></div>
-      <div><b>91%</b><span>of it burnt (dNBR &gt;= 0.10)</span></div>
-      <div><b>34%</b><span>moderate-high or high severity</span></div>
-      <div><b>n/a</b><span>only one summer since the fire so far</span></div>
-    </div>
-<div class="bar" role="img" aria-label="Severity mix"><i style="width:9.2%;background:var(--sev-un)" title="Unburnt: 9.2%"></i><i style="width:27.0%;background:var(--sev-low)" title="Low: 27.0%"></i><i style="width:30.1%;background:var(--sev-ml)" title="Moderate-low: 30.1%"></i><i style="width:18.9%;background:var(--sev-mh)" title="Moderate-high: 18.9%"></i><i style="width:14.8%;background:var(--sev-hi)" title="High: 14.8%"></i></div>
-<div class="legend"><span><i style="background:var(--sev-un)"></i>Unburnt</span><span><i style="background:var(--sev-low)"></i>Low</span><span><i style="background:var(--sev-ml)"></i>Moderate-low</span><span><i style="background:var(--sev-mh)"></i>Moderate-high</span><span><i style="background:var(--sev-hi)"></i>High</span></div>
-<p class="note">Small fire: near the limit of 20 m pixels.</p>
-<figure><a href="dnbr_severity.png"><img loading="lazy" src="dnbr_severity.png" alt="Burn severity figure for the Labillardiere Peninsula fire"></a><figcaption>Burn severity (dNBR) inside and around the official boundary.</figcaption></figure><figure><a href="before_after.png"><img loading="lazy" src="before_after.png" alt="Before and after figure for the Labillardiere Peninsula fire"></a><figcaption>Images before and after the fire.</figcaption></figure><figure><a href="recovery.png"><img loading="lazy" src="recovery.png" alt="Recovery figure for the Labillardiere Peninsula fire"></a><figcaption>Recovery of the burn ratio since the fire, relative to unburnt land nearby.</figcaption></figure>
-<p><a href="summary.csv">Numbers (CSV)</a></p>
-<nav class="pager" aria-label="Other fires"><a href="../nelsons-tier/index.html">&larr; Newer: Nelsons Tier fire, 2025</a><a class="older" href="../mount-donaldson/index.html">Older: Mount Donaldson fire, 2025 &rarr;</a></nav>
-<footer>
-<p><b>Not an official resource: exploratory results made with an AI coding agent at a workshop, not checked by a bushfire or fire-ecology expert.</b> <a href="https://www.fire.tas.gov.au/">For official fire information, see the Tasmania Fire Service</a>.</p>
-<p>Data sources and attribution: see the <a href="../index.html">catalog page</a>.</p>
-</footer>
-</main>
+<p>The Tasmanian bushfires site has moved to <a href="https://mdsumner.github.io/epicormic/labillardiere-peninsula/">https://mdsumner.github.io/epicormic/labillardiere-peninsula/</a>.</p>
+<script>location.replace('https://mdsumner.github.io/epicormic/labillardiere-peninsula/' + location.hash)</script>
 </body>
 </html>

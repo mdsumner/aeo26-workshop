@@ -1,5 +1,9 @@
 # Tasmanian bushfire impacts from Sentinel-2
 
+> **This work continues at <https://mdsumner.github.io/epicormic/>.** What is here is the version built at the workshop.
+> The HTML pages in `outputs/tasmania/` now forward to the new site; running
+> `python tas_fires.py --overview` here rebuilds them and replaces the forwarding pages.
+
 `tas_fires.py` is a small, self-contained demonstration. You choose a recent Tasmanian bushfire, and
 it shows **where the fire burnt, how severely, and how fast the vegetation has recovered**, using
 free Sentinel-2 satellite images and the State's official fire boundaries.

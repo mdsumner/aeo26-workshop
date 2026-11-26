@@ -1,5 +1,9 @@
 # Practical and Sovereign AI for Earth Observation
+
 ### A hands-on agentic coding workshop · AEO26
+
+> **The Tasmanian bushfires site built here has moved to <https://mdsumner.github.io/epicormic/>.** The old pages under
+> `outputs/tasmania/` now forward there; the code, figures and CSVs stay here as the workshop record.
 
 📍 **Monday 9 November 2026 · 9:00 am – 12:30 pm ·
 [Advancing Earth Observation Forum 2026](https://www.earthobsforum.org/), Nipaluna/Hobart,
